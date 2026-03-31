@@ -171,32 +171,26 @@ Open `http://localhost:5159` in your browser.
 
 ## Docker Deployment
 
+**Prerequisites:** Docker
+
 ```bash
-docker compose up -d
+# Build the image
+docker build -t qubic_doge_stats .
+
+# Run with a persistent volume
+docker run -d \
+  --name qubic_doge_stats \
+  -p 8080:8080 \
+  -v qubic_doge_data:/data \
+  -e DATA_DIR=/data \
+  -e LITEDB_FILE=doge_stats.db \
+  --restart unless-stopped \
+  qubic_doge_stats
 ```
 
 The app will be available at `http://localhost:8080`.
 
 The database is persisted in a named Docker volume (`qubic_doge_data`).
-
-**docker-compose.yaml:**
-```yaml
-services:
-  qubic_doge_stats:
-    image: andyqus/qubic_doge_stats:latest
-    environment:
-      - ASPNETCORE_URLS=http://+:8080
-      - DATA_DIR=/data
-      - LITEDB_FILE=doge_stats.db
-    ports:
-      - "8080:8080"
-    volumes:
-      - qubic_doge_data:/data
-    restart: unless-stopped
-
-volumes:
-  qubic_doge_data:
-```
 
 ---
 

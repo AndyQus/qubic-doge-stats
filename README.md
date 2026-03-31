@@ -1,105 +1,228 @@
 # Qubic Doge Stats
 
-Real-time mining statistics tracker for Qubic x Dogecoin mining operations.
+Real-time mining statistics dashboard for **Qubic × Dogecoin** mining operations.
 
-## How it works
-
-### Architecture
-
-```
-External API (doge-stats.qubic.org)   Qubic RPC (rpc.qubic.org)
-         ↓                                      ↓
-    DogeStatsClient                      QubicRpcClient
-         ↓                                      ↓
-           DogeStatsPollingWorker (every 60s)
-                        ↓
-              HashrateSnapshot (+ QubicEpoch)
-                        ↓
-               LiteDB (doge_stats.db)
-                        ↓
-         ┌──────────────┴─────────────────┐
-         ↓                                ↓
-   Backend API (Minimal APIs)    Blazor WASM Frontend
-   /api/snapshots/latest         Home.razor (dashboard)
-   /api/snapshots/history        StatCard, CountdownBlock
-```
-
-### Data Collection
-
-The `DogeStatsPollingWorker` background service polls every 60 seconds:
-1. Fetches mining stats from `https://doge-stats.qubic.org/dispatcher.json`
-2. Fetches current Qubic epoch from `https://rpc.qubic.org/v1/tick-info`
-   - Normal operation: epoch refreshed every 5 minutes
-   - Wednesday 11:00–15:00 UTC (epoch transition window): refreshed every poll
-3. Stores `HashrateSnapshot` with all fields + `QubicEpoch` to LiteDB
-
-### Epoch Tracking
-
-A new Qubic epoch begins every Wednesday at 12:00 UTC. The epoch transition
-can take some time — the RPC API reflects the new epoch once the network completes
-the handover. The worker detects epoch changes and logs them.
-
-### Frontend
-
-Blazor WebAssembly app that fetches data from the backend API:
-- **Countdown** — shows time until April 1, 2026 12:00 UTC (mining start)
-- **Stats Cards** — hashrate, pool accepted/rejected, peers, solutions, uptime
-- **Hashrate Chart** — last 60 data points as a line chart
-- **Footer** — disclaimer, links, version
-
-### Configuration
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `DogeStats:ApiUrl` | `https://doge-stats.qubic.org/dispatcher.json` | Mining stats API |
-| `DogeStats:PollIntervalSeconds` | `60` | Poll interval in seconds |
-| `QubicRpc:BaseUrl` | `https://rpc.qubic.org/` | Qubic RPC base URL |
-| `LiteDb:Filename` | `Data/doge_stats.db` | LiteDB file path |
-
-Environment variable overrides: `DATA_DIR`, `LITEDB_FILE`
+Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://doge-stats.qubic.org) API and stored locally. A Blazor WebAssembly frontend visualizes hashrate, pool stats, epoch history, and more.
 
 ---
 
-## Maßnahmenplan / Backlog
+## Features
 
-### In Arbeit
-- [x] Grundstruktur: Polling, LiteDB, Blazor UI, MudBlazor
-- [x] Hashrate-Chart (letzte 60 Messpunkte)
-- [x] Countdown bis Mining-Start (1. April 2026, 12:00 UTC)
-- [x] Qubic Epoch je Datensatz speichern (rpc.qubic.org/v1/tick-info)
-- [x] Epoch-Transition-Erkennung (Mittwoch 11–15 UTC: erhöhte Prüffrequenz)
-- [x] FooterComponent mit Disclaimer, Links, Version
+- Live hashrate monitoring (GH/s) with 60-minute trend chart
+- Pool stats: accepted / rejected / submitted shares
+- Solutions tracking: accepted, received, rejected, stale
+- Connected peers and active tasks
+- Qubic epoch tracking with automatic epoch-change detection
+- Epoch comparison charts (hashrate & solutions per epoch)
+- Current epoch timeline chart (day-by-day breakdown)
+- Today's hashrate by hour
+- Countdown to the next epoch transition
+- Light / dark mode
+- Fully self-hosted via Docker
 
-### Offen / Geplant
+---
 
-#### Daten & Backend
-- [ ] **Epoch-Statistiken**: Aggregierte Werte pro Epoche (Gesamt-Solutions, Hashrate-Durchschnitt, etc.)
-- [ ] **Poll-Intervall konfigurierbar per UI** (z.B. nach Mining-Start auf 5 min umstellen)
-- [ ] **Datenbereinigung**: Alte Snapshots automatisch löschen (z.B. >30 Tage)
-- [ ] **API-Endpoint für Epoch-Übersicht**: `/api/epochs` mit Aggregaten pro Epoche
+## Architecture
 
-#### Frontend / UI
-- [ ] **Epoch-Anzeige** in den Stats-Cards oder Header (aktuell: Epoche X)
-- [ ] **Epoch-Vergleich**: Stats dieser Epoche vs. letzter Epoche
-- [ ] **Solutions-pro-Stunde Chart**: Ergänzend zum Hashrate-Chart
-- [ ] **Peers-Chart**: ConnectedPeers über Zeit
-- [ ] **Datum/Uhrzeit der letzten Epoch-Änderung** anzeigen
-- [ ] **Mobile-Optimierung**: StatCards bei xs kompakter darstellen
-- [ ] **Logo** in Footer und AppBar einbinden (logos/Logo_dark.webp)
+```
+External APIs
+  https://doge-stats.qubic.org/dispatcher.json   (mining stats)
+  https://rpc.qubic.org/v1/tick-info             (Qubic epoch)
+           │                         │
+     DogeStatsClient          QubicRpcClient
+           └──────────┬────────────┘
+                      │
+          DogeStatsPollingWorker
+          (Background service, every 60 s)
+                      │
+               HashrateSnapshot
+                      │
+            LiteDB  (doge_stats.db)
+                      │
+         ┌────────────┴────────────┐
+         │                         │
+  Minimal API (ASP.NET)     Blazor WASM (Client)
+  /api/snapshots/latest     Home.razor (Dashboard)
+  /api/snapshots/history    StatCard, CountdownBlock
+```
 
-#### Infrastruktur
-- [ ] **Docker Compose** mit Volume-Mount für persistente DB
-- [ ] **Health-Check Endpoint** (`/health`)
-- [ ] **Swagger/OpenAPI** für Backend-API
-- [ ] **Logging strukturiert** (Seq oder ähnlich)
-- [ ] **Unit-Tests** für Polling-Logik und Epoch-Transition-Erkennung
+---
+
+## API Endpoints
+
+Base URL (local): `http://localhost:5159`
+
+### `GET /api/snapshots/latest`
+
+Returns the most recent stored snapshot.
+
+**Response `200 OK`:**
+```json
+{
+  "id": "...",
+  "timestamp": "2026-03-31T12:00:00+00:00",
+  "hashrate": 1234567890,
+  "hashrateDisplay": "1.23 GH/s",
+  "poolDifficulty": 100000,
+  "tasksDistributed": 512,
+  "activeTasks": 48,
+  "connectedPeers": 312,
+  "totalPeers": 450,
+  "poolAccepted": 98234,
+  "poolRejected": 12,
+  "poolSubmitted": 98246,
+  "solutionsAccepted": 7412,
+  "solutionsReceived": 7415,
+  "solutionsRejected": 3,
+  "solutionsStale": 0,
+  "uptimeSeconds": 864000,
+  "queueSolutions": 0,
+  "queueStratum": 2,
+  "qubicEpoch": 180
+}
+```
+
+**Response `404 Not Found`** — no data collected yet.
+
+---
+
+### `GET /api/snapshots/history?limit=100`
+
+Returns the most recent N snapshots, ordered by time (newest first).
+
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `limit` | `int` | `100` | `10080` | Number of snapshots to return (10 080 = ~7 days at 1/min) |
+
+**Response `200 OK`:** Array of `HashrateSnapshot` objects (same schema as above).
+
+---
+
+## Data Model — `HashrateSnapshot`
+
+| Field | Type | Source | Description |
+|-------|------|--------|-------------|
+| `timestamp` | `DateTimeOffset` | Server | UTC time of the poll |
+| `hashrate` | `long` | `mining.hashrate` | Raw hashrate in H/s |
+| `hashrateDisplay` | `string` | `mining.hashrate_display` | Human-readable (e.g. "1.23 GH/s") |
+| `poolDifficulty` | `long` | `mining.pool_difficulty` | Current pool difficulty |
+| `tasksDistributed` | `int` | `mining.tasks_distributed` | Total tasks distributed |
+| `activeTasks` | `int` | `active_tasks` | Currently active tasks |
+| `connectedPeers` | `int` | `network.connected_peers` | Active peer connections |
+| `totalPeers` | `int` | `network.total_peers` | Total known peers |
+| `poolAccepted` | `int` | `pool.accepted` | Pool shares accepted |
+| `poolRejected` | `int` | `pool.rejected` | Pool shares rejected |
+| `poolSubmitted` | `int` | `pool.submitted` | Pool shares submitted |
+| `solutionsAccepted` | `int` | `solutions.accepted` | Solutions accepted by network |
+| `solutionsReceived` | `int` | `solutions.received` | Solutions received by pool |
+| `solutionsRejected` | `int` | `solutions.rejected` | Solutions rejected |
+| `solutionsStale` | `int` | `solutions.stale` | Stale solutions |
+| `uptimeSeconds` | `long` | `uptime_seconds` | Node uptime |
+| `queueSolutions` | `int` | `queues.solutions` | Solutions in queue |
+| `queueStratum` | `int` | `queues.stratum` | Stratum connections in queue |
+| `qubicEpoch` | `int` | `rpc.qubic.org` | Current Qubic epoch number |
+
+---
+
+## Epoch Tracking
+
+A new Qubic epoch begins every **Wednesday at 12:00 UTC**. The polling worker:
+
+- Refreshes the epoch from `rpc.qubic.org/v1/tick-info` every **5 minutes** normally
+- During the **Wednesday 11:00–15:00 UTC** transition window: refreshes on **every poll** to catch the changeover as quickly as possible
+- Logs an info message when an epoch change is detected
+
+---
+
+## Configuration
+
+All settings can be overridden via `appsettings.json`, environment variables, or Docker environment.
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `DogeStats:ApiUrl` | `https://doge-stats.qubic.org/dispatcher.json` | Mining stats source |
+| `DogeStats:PollIntervalSeconds` | `60` | Poll interval in seconds |
+| `QubicRpc:BaseUrl` | `https://rpc.qubic.org/` | Qubic RPC base URL |
+| `LiteDb:Filename` | `Data/doge_stats.db` | LiteDB database file path |
+
+**Docker environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `DATA_DIR` | Directory for the LiteDB file (e.g. `/data`) |
+| `LITEDB_FILE` | DB filename inside `DATA_DIR` (e.g. `doge_stats.db`) |
+| `ASPNETCORE_URLS` | Listening URL (default `http://+:8080`) |
+
+---
+
+## Running Locally
+
+**Prerequisites:** .NET 10 SDK
+
+```bash
+git clone https://github.com/AndyQus/qubic_doge_stats.git
+cd qubic_doge_stats/qubic_doge_stats
+dotnet run
+```
+
+Open `http://localhost:5159` in your browser.
+
+---
+
+## Docker Deployment
+
+```bash
+docker compose up -d
+```
+
+The app will be available at `http://localhost:8080`.
+
+The database is persisted in a named Docker volume (`qubic_doge_data`).
+
+**docker-compose.yaml:**
+```yaml
+services:
+  qubic_doge_stats:
+    image: andyqus/qubic_doge_stats:latest
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - DATA_DIR=/data
+      - LITEDB_FILE=doge_stats.db
+    ports:
+      - "8080:8080"
+    volumes:
+      - qubic_doge_data:/data
+    restart: unless-stopped
+
+volumes:
+  qubic_doge_data:
+```
 
 ---
 
 ## Tech Stack
 
-- .NET 9 / ASP.NET Core
-- Blazor WebAssembly (WASM)
-- MudBlazor 8.x
-- LiteDB 5.x (embedded)
-- Docker
+| Layer | Technology |
+|-------|-----------|
+| Runtime | .NET 10 / ASP.NET Core |
+| Frontend | Blazor WebAssembly |
+| UI Components | MudBlazor 9.x |
+| Database | LiteDB 5.x (embedded, file-based) |
+| Container | Docker / Docker Compose |
+
+---
+
+## External Data Sources
+
+| Source | URL | Description |
+|--------|-----|-------------|
+| DogeStats API | `https://doge-stats.qubic.org/dispatcher.json` | Mining pool statistics |
+| Qubic RPC | `https://rpc.qubic.org/v1/tick-info` | Current epoch / tick info |
+
+---
+
+## Disclaimer
+
+This application is in **beta**. All data is retrieved from public endpoints.
+Completeness, accuracy, and availability of the captured data are not guaranteed.
+Use it for demonstration and analysis purposes only.

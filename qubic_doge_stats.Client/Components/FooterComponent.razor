@@ -1,11 +1,5 @@
 ﻿@using System.Reflection
 
-<style>
-    .text-center {
-        text-align: center;
-    }
-</style>
-
 <MudAlert ContentAlignment="HorizontalAlignment.Center"
           Severity="Severity.Warning"
           Variant="Variant.Text"
@@ -47,40 +41,28 @@
             </MudItem>
 
             <MudItem xs="12" md="4" Class="d-flex flex-wrap justify-center gap-2">
-                @foreach (var item in LinkItems)
+                @for (int i = 0; i < LinkItems.Count; i++)
                 {
-                    if (item.IsInternal)
-                    {
-                        <MudLink Color="Color.Tertiary"
-                                 Href="@item.To"
-                                 Target="_self"
-                                 Underline="Underline.Hover"
-                                 Style="font-size: small;">
-                            @item.Label
-                        </MudLink>
-                    }
-                    else
-                    {
-                        <MudLink Color="Color.Tertiary"
-                                 Href="@item.To"
-                                 Target="_blank"
-                                 rel="noreferrer"
-                                 Underline="Underline.Hover"
-                                 Style="font-size: small;">
-                            @item.Label
-                        </MudLink>
-                    }
+                    var item = LinkItems[i];
+                    <MudLink Color="Color.Tertiary"
+                             Href="@item.To"
+                             Target="@(item.IsInternal ? "_self" : "_blank")"
+                             rel="@(item.IsInternal ? null : "noreferrer")"
+                             Underline="Underline.Hover"
+                             Style="font-size: small;">
+                        @item.Label
+                    </MudLink>
 
-                    @if (item != LinkItems.Last())
+                    @if (i < LinkItems.Count - 1)
                     {
-                        <MudText Typo="Typo.caption">•</MudText>
+                        <MudText Typo="Typo.caption">&#x2022;</MudText>
                     }
                 }
             </MudItem>
 
             <MudItem xs="12" md="4" Class="d-flex justify-center justify-md-end">
                 <MudText Typo="Typo.caption">
-                    v.@version (BETA)
+                    v.@_version (BETA)
                 </MudText>
             </MudItem>
 
@@ -90,21 +72,17 @@
 
 
 @code {
-    public string version { get; set; } = "0.0.1";
+    private string _version = "0.0.1";
 
     private record FooterLinkItem(string Label, string To, bool IsInternal);
 
-    private List<FooterLinkItem> LinkItems = new()
-    {
+    private static readonly List<FooterLinkItem> LinkItems =
+    [
         new("Qubic.org", "https://qubic.org", false),
         new("Terms of Service", "https://qubic.org/terms-of-service", false),
         new("Privacy Policy", "https://qubic.org/privacy-policy", false)
-    };
+    ];
 
-    /// <summary>
-    /// Reads the informational version from the executing assembly
-    /// and extracts the short form (before the '+').
-    /// </summary>
     protected override void OnInitialized()
     {
         base.OnInitialized();
@@ -114,6 +92,6 @@
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
             ?.InformationalVersion ?? "???";
 
-        version = fullVersion.Split('+')[0];
+        _version = fullVersion.Split('+')[0];
     }
 }

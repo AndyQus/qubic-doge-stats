@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject IJSRuntime JS
 
 <MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="_theme" />
 <MudPopoverProvider />
@@ -73,6 +74,7 @@
         if (firstRender)
         {
             _isDarkMode = await _themeProvider.GetSystemDarkModeAsync();
+            await JS.InvokeVoidAsync("eval", "document.activeElement?.blur()");
             StateHasChanged();
         }
     }

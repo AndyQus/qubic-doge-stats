@@ -12,13 +12,15 @@
             QUBIC x DOGECOIN MINING STARTS IN
         </MudText>
         <div class="d-flex justify-center align-center gap-2 flex-wrap">
-            <CountdownBlock Value="@_days" Label="DAYS" />
-            <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
-            <CountdownBlock Value="@_hours" Label="HOURS" />
-            <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
-            <CountdownBlock Value="@_minutes" Label="MIN" />
-            <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
-            <CountdownBlock Value="@_seconds" Label="SEC" />
+            @{ var units = new[] { (_days, "DAYS"), (_hours, "HOURS"), (_minutes, "MIN"), (_seconds, "SEC") }; }
+            @for (int i = 0; i < units.Length; i++)
+            {
+                @if (i > 0)
+                {
+                    <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
+                }
+                <CountdownBlock Value="@units[i].Item1" Label="@units[i].Item2" />
+            }
         </div>
         <MudText Align="Align.Center" Class="mt-2 dim-text" Style="font-size: 0.8rem;">
             April 1, 2026 - 12:00:00 UTC
@@ -33,13 +35,13 @@
         <MudItem xs="12" sm="6">
             <StatCard Icon="@Icons.Material.Filled.Speed"
                       Title="Hashrate"
-                      Value="@(string.IsNullOrEmpty(_latest.HashrateDisplay) ? $"{_latest.Hashrate / 1_000_000_000.0:F1} GH/s" : _latest.HashrateDisplay)"
+                      Value="@(string.IsNullOrEmpty(_latest.HashrateDisplay) ? $"{ToGigaHashPerSecond(_latest.Hashrate):F1} GH/s" : _latest.HashrateDisplay)"
                       Color="#7e6fff" />
         </MudItem>
         <MudItem xs="12" sm="6">
             <StatCard Icon="@Icons.Material.Filled.TrendingUp"
                       Title="All-Time Peak Hashrate"
-                      Value="@($"{(_peakSnapshot is not null ? _peakSnapshot.Hashrate / 1_000_000_000.0 : 0):F1} GH/s{(_peakSnapshot?.QubicEpoch > 0 ? $" · E{_peakSnapshot!.QubicEpoch}" : "")}")"
+                      Value="@($"{(_peakSnapshot is not null ? ToGigaHashPerSecond(_peakSnapshot.Hashrate) : 0):F1} GH/s{(_peakSnapshot?.QubicEpoch > 0 ? $" · E{_peakSnapshot!.QubicEpoch}" : "")}")"
                       Color="#FFD700" />
         </MudItem>
         <MudItem xs="12" sm="6">
@@ -344,7 +346,7 @@ else
         if (_history.Count == 0) return;
 
         // 60-min chart: actual time labels every 10 points to avoid overlap
-        var values = _history.Select(h => h.Hashrate / 1_000_000_000.0).ToArray();
+        var values = _history.Select(h => ToGigaHashPerSecond(h.Hashrate)).ToArray();
         int total = values.Length;
         _chartLabels = _history.Select((h, i) =>
             (i % 10 == 0 && i < total - 5) || i == total - 1
@@ -358,7 +360,7 @@ else
         var byHour = _fullHistory
             .Where(h => h.Timestamp.ToLocalTime().Date == todayLocal)
             .GroupBy(h => h.Timestamp.ToLocalTime().Hour)
-            .ToDictionary(g => g.Key, g => g.Average(x => x.Hashrate / 1_000_000_000.0));
+            .ToDictionary(g => g.Key, g => g.Average(x => ToGigaHashPerSecond(x.Hashrate)));
 
         int currentHour = DateTimeOffset.UtcNow.ToLocalTime().Hour;
         _todayLabels = Enumerable.Range(0, currentHour + 1).Select(h => $"{h:D2}").ToArray();
@@ -374,7 +376,7 @@ else
         ];
 
         var todayAll = _fullHistory.Where(h => h.Timestamp.ToLocalTime().Date == todayLocal).ToList();
-        _todayPeak = todayAll.Count > 0 ? todayAll.Max(h => h.Hashrate / 1_000_000_000.0) : 0;
+        _todayPeak = todayAll.Count > 0 ? todayAll.Max(h => ToGigaHashPerSecond(h.Hashrate)) : 0;
     }
 
     private void BuildEpochChartData()
@@ -394,7 +396,7 @@ else
             new ChartSeries<double>
             {
                 Name = "Avg GH/s",
-                Data = epochs.Select(g => g.Average(x => x.Hashrate / 1_000_000_000.0)).ToArray()
+                Data = epochs.Select(g => g.Average(x => ToGigaHashPerSecond(x.Hashrate))).ToArray()
             }
         ];
 
@@ -442,7 +444,7 @@ else
             new ChartSeries<double>
             {
                 Name = "GH/s",
-                Data = byDay.Select(g => g.Average(h => h.Hashrate / 1_000_000_000.0)).ToArray()
+                Data = byDay.Select(g => g.Average(h => ToGigaHashPerSecond(h.Hashrate))).ToArray()
             }
         ];
 
@@ -458,6 +460,8 @@ else
         if (candidate > utcTime) candidate = candidate.AddDays(-7);
         return candidate;
     }
+
+    private static double ToGigaHashPerSecond(double hashrate) => hashrate / 1_000_000_000.0;
 
     private string FormatUptime(long seconds)
     {

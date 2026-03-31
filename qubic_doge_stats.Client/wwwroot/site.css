@@ -1,3 +1,8 @@
+/* Focus outline nur bei Tastaturnavigation, nicht bei Maus/Touch */
+:focus:not(:focus-visible) {
+    outline: none !important;
+}
+
 /* Kompakte MudTable-Zeilen */
 .compact-table td,
 .compact-table th {

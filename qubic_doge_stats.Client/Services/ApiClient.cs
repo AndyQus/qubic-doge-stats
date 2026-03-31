@@ -1,0 +1,23 @@
+using qubic_doge_stats.Shared.Models;
+using System.Net.Http.Json;
+
+namespace qubic_doge_stats.Client.Services;
+
+public class ApiClient
+{
+    private readonly HttpClient _http;
+
+    public ApiClient(HttpClient http) => _http = http;
+
+    public async Task<HashrateSnapshot?> GetLatestSnapshotAsync()
+    {
+        try { return await _http.GetFromJsonAsync<HashrateSnapshot>("/api/snapshots/latest"); }
+        catch { return null; }
+    }
+
+    public async Task<List<HashrateSnapshot>> GetHistoryAsync(int limit = 100)
+    {
+        try { return await _http.GetFromJsonAsync<List<HashrateSnapshot>>($"/api/snapshots/history?limit={limit}") ?? []; }
+        catch { return []; }
+    }
+}

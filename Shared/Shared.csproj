@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>qubic_doge_stats.Shared</AssemblyName>
+    <RootNamespace>qubic_doge_stats.Shared</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="LiteDB" Version="5.0.21" />
+  </ItemGroup>
+</Project>

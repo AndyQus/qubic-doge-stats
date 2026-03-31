@@ -1,0 +1,119 @@
+﻿@using System.Reflection
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+<MudAlert ContentAlignment="HorizontalAlignment.Center"
+          Severity="Severity.Warning"
+          Variant="Variant.Text"
+          Class="mt-4 mb-4 text-center"
+          Style="padding:4px;">
+    <MudText Typo="Typo.caption"><b>Disclaimer: </b></MudText>
+    <MudText Typo="Typo.caption">This application is currently in <u>beta status</u>.</MudText>
+    <MudText Typo="Typo.caption">
+        All data is retrieved from the public RPC endpoint 
+        <MudLink Color="Color.Tertiary"
+            Href="https://rpc.qubic.org"
+            Target="_blank"
+            Underline="Underline.Hover"
+            Style="font-size: small;">
+            rpc.qubic.org
+        </MudLink>
+        and 
+        <MudLink Color="Color.Tertiary"
+            Href="https://doge-stats.qubic.org"
+            Target="_blank"
+            Underline="Underline.Hover"
+            Style="font-size: small;">
+            https://doge-stats.qubic.org
+        </MudLink>.
+    </MudText>
+    <MudText Typo="Typo.caption">I <u>do not guarantee</u> the <u>completeness, accuracy, or availability</u> of the captured data.</MudText>
+    <MudText Typo="Typo.caption"><strong>Use it for <u>demonstration and analysis purposes only</u>.</strong></MudText>
+</MudAlert>
+
+<MudPaper Class="mt-5 pa-1 mb-2 pt-3" Elevation="0" Square="true">
+    <MudContainer MaxWidth="MaxWidth.False">
+        <MudGrid Class="align-items-center" Justify="Justify.SpaceBetween">
+
+            <MudItem xs="12" md="4" Class="d-flex align-center justify-center justify-md-start">
+                <MudImage Src="logos/Logo_dark.webp" Height="25" Width="25" />
+                <MudText Typo="Typo.caption">
+                    &nbsp;&copy; @DateTime.Now.Year Qubic - Sponsored by AndyQus
+                </MudText>
+            </MudItem>
+
+            <MudItem xs="12" md="4" Class="d-flex flex-wrap justify-center gap-2">
+                @foreach (var item in LinkItems)
+                {
+                    if (item.IsInternal)
+                    {
+                        <MudLink Color="Color.Tertiary"
+                                 Href="@item.To"
+                                 Target="_self"
+                                 Underline="Underline.Hover"
+                                 Style="font-size: small;">
+                            @item.Label
+                        </MudLink>
+                    }
+                    else
+                    {
+                        <MudLink Color="Color.Tertiary"
+                                 Href="@item.To"
+                                 Target="_blank"
+                                 rel="noreferrer"
+                                 Underline="Underline.Hover"
+                                 Style="font-size: small;">
+                            @item.Label
+                        </MudLink>
+                    }
+
+                    @if (item != LinkItems.Last())
+                    {
+                        <MudText Typo="Typo.caption">•</MudText>
+                    }
+                }
+            </MudItem>
+
+            <MudItem xs="12" md="4" Class="d-flex justify-center justify-md-end">
+                <MudText Typo="Typo.caption">
+                    v.@version (BETA)
+                </MudText>
+            </MudItem>
+
+        </MudGrid>
+    </MudContainer>
+</MudPaper>
+
+
+@code {
+    public string version { get; set; } = "0.0.1";
+
+    private record FooterLinkItem(string Label, string To, bool IsInternal);
+
+    private List<FooterLinkItem> LinkItems = new()
+    {
+        new("Qubic.org", "https://qubic.org", false),
+        new("Terms of Service", "https://qubic.org/terms-of-service", false),
+        new("Privacy Policy", "https://qubic.org/privacy-policy", false)
+    };
+
+    /// <summary>
+    /// Reads the informational version from the executing assembly
+    /// and extracts the short form (before the '+').
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        var fullVersion = Assembly
+            .GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion ?? "???";
+
+        version = fullVersion.Split('+')[0];
+    }
+}

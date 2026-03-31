@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  qubic_doge_stats:
+    image: andyqus/qubic_doge_stats:latest
+    container_name: qubic_doge_stats
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - DATA_DIR=/data
+      - LITEDB_FILE=doge_stats.db
+      - ASPNETCORE_ENVIRONMENT=Production
+    ports:
+      - "8080:8080"
+    volumes:
+      - qubic_doge_data:/data
+    restart: unless-stopped
+
+volumes:
+  qubic_doge_data:

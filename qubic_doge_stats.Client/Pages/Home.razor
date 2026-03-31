@@ -1,0 +1,475 @@
+@page "/"
+@inject ApiClient Api
+@implements IDisposable
+
+<PageTitle>Qubic Doge Stats</PageTitle>
+
+@* ===== COUNTDOWN (nur sichtbar vor Mining-Start) ===== *@
+@if (!_miningStarted)
+{
+    <MudPaper Class="glass pa-4 mb-4" Elevation="0" Style="background: linear-gradient(135deg, rgba(16,24,48,0.7) 0%, rgba(26,32,64,0.7) 100%) !important; border: 1px solid rgba(126,111,255,0.35) !important;">
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-2" Style="color: #4EE0FC; font-weight: 600; letter-spacing: 2px;">
+            QUBIC x DOGECOIN MINING STARTS IN
+        </MudText>
+        <div class="d-flex justify-center align-center gap-2 flex-wrap">
+            <CountdownBlock Value="@_days" Label="DAYS" />
+            <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
+            <CountdownBlock Value="@_hours" Label="HOURS" />
+            <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
+            <CountdownBlock Value="@_minutes" Label="MIN" />
+            <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
+            <CountdownBlock Value="@_seconds" Label="SEC" />
+        </div>
+        <MudText Align="Align.Center" Class="mt-2 dim-text" Style="font-size: 0.8rem;">
+            April 1, 2026 - 12:00:00 UTC
+        </MudText>
+    </MudPaper>
+}
+
+@* ===== STATS CARDS ===== *@
+@if (_latest is not null)
+{
+    <MudGrid Class="mb-4 stats-grid">
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Speed"
+                      Title="Hashrate"
+                      Value="@(string.IsNullOrEmpty(_latest.HashrateDisplay) ? $"{_latest.Hashrate / 1_000_000_000.0:F1} GH/s" : _latest.HashrateDisplay)"
+                      Color="#7e6fff" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.TrendingUp"
+                      Title="All-Time Peak Hashrate"
+                      Value="@($"{(_peakSnapshot is not null ? _peakSnapshot.Hashrate / 1_000_000_000.0 : 0):F1} GH/s{(_peakSnapshot?.QubicEpoch > 0 ? $" · E{_peakSnapshot!.QubicEpoch}" : "")}")"
+                      Color="#FFD700" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.CheckCircle"
+                      Title="Pool Accepted"
+                      Value="@_latest.PoolAccepted.ToString("N0")"
+                      Color="#4caf50" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Error"
+                      Title="Pool Rejected"
+                      Value="@_latest.PoolRejected.ToString("N0")"
+                      Color="#f44336" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Hub"
+                      Title="Connected Peers"
+                      Value="@($"{_latest.ConnectedPeers} / {_latest.TotalPeers}")"
+                      Color="#4EE0FC" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.TaskAlt"
+                      Title="Solutions Accepted"
+                      Value="@_latest.SolutionsAccepted.ToString("N0")"
+                      Color="#4caf50" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.ContentPaste"
+                      Title="Solutions Stale"
+                      Value="@_latest.SolutionsStale.ToString("N0")"
+                      Color="#ff9800" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Assignment"
+                      Title="Tasks Distributed"
+                      Value="@_latest.TasksDistributed.ToString("N0")"
+                      Color="#7e6fff" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Timer"
+                      Title="Uptime"
+                      Value="@FormatUptime(_latest.UptimeSeconds)"
+                      Color="#4EE0FC" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.LayersClear"
+                      Title="Current Epoch"
+                      Value="@(_latest.QubicEpoch > 0 ? _latest.QubicEpoch.ToString() : "–")"
+                      Color="#4EE0FC" />
+        </MudItem>
+    </MudGrid>
+
+    @* Last updated *@
+    <MudText Class="mb-4 dim-text" Style="font-size: 0.75rem;">
+        Last updated: @_latest.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+    </MudText>
+}
+else
+{
+    <MudPaper Class="pa-6 mb-4 d-flex justify-center align-center" Elevation="1">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+        <MudText Class="ml-4 dim-text">Loading stats...</MudText>
+    </MudPaper>
+}
+
+@* ===== LIVE HASHRATE CHARTS (side by side) ===== *@
+<MudGrid Class="mb-4">
+    <MudItem xs="12" md="6">
+        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
+            <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live Hashrate (GH/s)</MudText>
+                <MudText Typo="Typo.caption" Class="dim-text">
+                    Last update: @_lastRefresh.ToLocalTime().ToString("HH:mm:ss") · auto 60 s
+                </MudText>
+            </div>
+            @if (_history.Count > 1)
+            {
+                <MudChart ChartType="ChartType.Line"
+                          ChartSeries="@_chartSeries"
+                          ChartLabels="@_chartLabels"
+                          Width="100%" Height="280px"
+                          ChartOptions="@_chartOptions" />
+            }
+            else
+            {
+                <div class="d-flex justify-center align-center" style="height:280px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <MudText Class="ml-3 dim-text">Waiting for data…</MudText>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
+            <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Hashrate (GH/s)</MudText>
+                <div class="d-flex flex-column align-end">
+                    <MudText Typo="Typo.caption" Class="dim-text">
+                        @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by hour
+                    </MudText>
+                    @if (_todayPeak > 0)
+                    {
+                        <MudText Typo="Typo.caption" Style="color: #FFD700;">
+                            Peak: @($"{_todayPeak:F1} GH/s")
+                        </MudText>
+                    }
+                </div>
+            </div>
+            @if (_todaySeries.Count > 0)
+            {
+                <MudChart ChartType="ChartType.Line"
+                          ChartSeries="@_todaySeries"
+                          ChartLabels="@_todayLabels"
+                          Width="100%" Height="280px"
+                          ChartOptions="@_chartOptions" />
+            }
+            else
+            {
+                <div class="d-flex justify-center align-center" style="height:280px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <MudText Class="ml-3 dim-text">Collecting today's data…</MudText>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@* ===== CURRENT EPOCH TIMELINE + AVG HASHRATE PER EPOCH (side by side) ===== *@
+<MudGrid Class="mb-4">
+    <MudItem xs="12" md="6">
+        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
+            <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                <MudText Typo="Typo.h6" Style="color: #7e6fff;">
+                    Current Epoch @(_latest?.QubicEpoch > 0 ? $"· Epoch {_latest.QubicEpoch}" : "") · Hashrate (GH/s)
+                </MudText>
+                <MudText Typo="Typo.caption" Class="dim-text">
+                    Wed 12:00 UTC → next Wed 12:00 UTC
+                </MudText>
+            </div>
+            @if (_epochTimelineSeries.Count > 0)
+            {
+                <MudChart ChartType="ChartType.Line"
+                          ChartSeries="@_epochTimelineSeries"
+                          ChartLabels="@_epochTimelineLabels"
+                          Width="100%" Height="260px"
+                          ChartOptions="@_chartOptions" />
+            }
+            else
+            {
+                <div class="d-flex justify-center align-center" style="height:260px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <MudText Class="ml-3 dim-text">Collecting current epoch data…</MudText>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
+            <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Avg Hashrate per Epoch (GH/s)</MudText>
+            <MudText Typo="Typo.caption" Class="mb-3 dim-text">Mean GH/s over all recorded snapshots per epoch</MudText>
+            @if (_epochHashrateSeries.Count > 0)
+            {
+                <MudChart ChartType="ChartType.Bar"
+                          ChartSeries="@_epochHashrateSeries"
+                          ChartLabels="@_epochLabels"
+                          Width="100%" Height="260px"
+                          ChartOptions="@_epochChartOptions" />
+            }
+            else
+            {
+                <div class="d-flex justify-center align-center" style="height:260px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@* ===== SOLUTIONS PER EPOCH (full width) ===== *@
+<MudPaper Class="glass-card pa-4 mb-4" Elevation="0">
+    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Solutions Accepted per Epoch</MudText>
+    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Delta solutions accepted within each epoch</MudText>
+    @if (_epochSolutionsSeries.Count > 0)
+    {
+        <MudChart ChartType="ChartType.Bar"
+                  ChartSeries="@_epochSolutionsSeries"
+                  ChartLabels="@_epochLabels"
+                  Width="100%" Height="260px"
+                  ChartOptions="@_epochChartOptions" />
+    }
+    else
+    {
+        <div class="d-flex justify-center align-center" style="height:260px;">
+            <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
+        </div>
+    }
+</MudPaper>
+
+@code {
+    [CascadingParameter(Name = "IsDarkMode")] private bool IsDarkMode { get; set; } = true;
+
+    private static readonly string[] _darkPalette = ["#7e6fff", "#4EE0FC", "#4caf50", "#ff9800", "#f44336"];
+    private static readonly string[] _lightPalette = ["#3d1fcc", "#006f8a", "#1b5e20", "#bf3600", "#8b0000"];
+
+    // Countdown target: April 1, 2026 12:00:00 UTC
+    private static readonly DateTimeOffset MiningStart = new DateTimeOffset(2026, 4, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private System.Threading.Timer? _countdownTimer;
+    private System.Threading.Timer? _refreshTimer;
+
+    private int _days, _hours, _minutes, _seconds;
+    private bool _miningStarted;
+
+    private HashrateSnapshot? _latest;
+    private HashrateSnapshot? _peakSnapshot;
+    private List<HashrateSnapshot> _history = [];
+    private List<HashrateSnapshot> _fullHistory = [];
+    private DateTimeOffset _lastRefresh = DateTimeOffset.UtcNow;
+
+    // Live 60-min chart
+    private List<ChartSeries<double>> _chartSeries = [];
+    private string[] _chartLabels = [];
+    private LineChartOptions _chartOptions => new LineChartOptions
+    {
+        YAxisTicks = 5,
+        YAxisFormat = "F2",
+        LineStrokeWidth = 2,
+        ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
+    };
+
+    // Today's hashrate by hour
+    private List<ChartSeries<double>> _todaySeries = [];
+    private string[] _todayLabels = [];
+    private double _todayPeak = 0;
+
+    // Epoch comparison charts (side by side)
+    private List<ChartSeries<double>> _epochHashrateSeries = [];
+    private List<ChartSeries<double>> _epochSolutionsSeries = [];
+    private string[] _epochLabels = [];
+    private BarChartOptions _epochChartOptions => new BarChartOptions
+    {
+        YAxisTicks = 5,
+        YAxisFormat = "F2",
+        ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
+    };
+
+    // Current epoch timeline chart
+    private List<ChartSeries<double>> _epochTimelineSeries = [];
+    private string[] _epochTimelineLabels = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateCountdown();
+        _countdownTimer = new System.Threading.Timer(_ =>
+        {
+            UpdateCountdown();
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+
+        await RefreshDataAsync();
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await RefreshDataAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+    }
+
+    private void UpdateCountdown()
+    {
+        var remaining = MiningStart - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            _miningStarted = true;
+            _days = _hours = _minutes = _seconds = 0;
+        }
+        else
+        {
+            _miningStarted = false;
+            _days = (int)remaining.TotalDays;
+            _hours = remaining.Hours;
+            _minutes = remaining.Minutes;
+            _seconds = remaining.Seconds;
+        }
+    }
+
+    private async Task RefreshDataAsync()
+    {
+        _latest = await Api.GetLatestSnapshotAsync();
+        // 10080 = 7 days × 24h × 60min at 60s poll interval (full epoch)
+        _fullHistory = await Api.GetHistoryAsync(10080);
+        _fullHistory = _fullHistory.OrderBy(x => x.Timestamp).ToList();
+        _history = _fullHistory.TakeLast(60).ToList();
+        _peakSnapshot = _fullHistory.Count > 0 ? _fullHistory.MaxBy(h => h.Hashrate) : null;
+        _lastRefresh = DateTimeOffset.UtcNow;
+        BuildChartData();
+        BuildEpochChartData();
+        BuildEpochTimelineData();
+    }
+
+    private void BuildChartData()
+    {
+        if (_history.Count == 0) return;
+
+        // 60-min chart: actual time labels every 10 points to avoid overlap
+        var values = _history.Select(h => h.Hashrate / 1_000_000_000.0).ToArray();
+        int total = values.Length;
+        _chartLabels = _history.Select((h, i) =>
+            (i % 10 == 0 && i < total - 5) || i == total - 1
+                ? h.Timestamp.ToLocalTime().ToString("HH:mm")
+                : ""
+        ).ToArray();
+        _chartSeries = [new ChartSeries<double> { Name = "GH/s", Data = values }];
+
+        // Today chart: average GH/s per hour bucket (00–23)
+        var todayLocal = DateTimeOffset.UtcNow.ToLocalTime().Date;
+        var byHour = _fullHistory
+            .Where(h => h.Timestamp.ToLocalTime().Date == todayLocal)
+            .GroupBy(h => h.Timestamp.ToLocalTime().Hour)
+            .ToDictionary(g => g.Key, g => g.Average(x => x.Hashrate / 1_000_000_000.0));
+
+        int currentHour = DateTimeOffset.UtcNow.ToLocalTime().Hour;
+        _todayLabels = Enumerable.Range(0, currentHour + 1).Select(h => $"{h:D2}").ToArray();
+        _todaySeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "GH/s",
+                Data = Enumerable.Range(0, currentHour + 1)
+                    .Select(h => byHour.TryGetValue(h, out var v) ? v : 0.0)
+                    .ToArray()
+            }
+        ];
+
+        var todayAll = _fullHistory.Where(h => h.Timestamp.ToLocalTime().Date == todayLocal).ToList();
+        _todayPeak = todayAll.Count > 0 ? todayAll.Max(h => h.Hashrate / 1_000_000_000.0) : 0;
+    }
+
+    private void BuildEpochChartData()
+    {
+        var epochs = _fullHistory
+            .Where(h => h.QubicEpoch > 0)
+            .GroupBy(h => h.QubicEpoch)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        if (epochs.Count == 0) return;
+
+        _epochLabels = epochs.Select(g => $"Ep {g.Key}").ToArray();
+
+        _epochHashrateSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Avg GH/s",
+                Data = epochs.Select(g => g.Average(x => x.Hashrate / 1_000_000_000.0)).ToArray()
+            }
+        ];
+
+        _epochSolutionsSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Solutions Accepted",
+                Data = epochs.Select(g =>
+                {
+                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
+                    return (double)Math.Max(0, sorted.Last().SolutionsAccepted - sorted.First().SolutionsAccepted);
+                }).ToArray()
+            }
+        ];
+    }
+
+    private void BuildEpochTimelineData()
+    {
+        var currentEpoch = _latest?.QubicEpoch ?? 0;
+        var epochStart = GetEpochStart(DateTimeOffset.UtcNow.UtcDateTime);
+
+        // If epoch tag is available use it; otherwise fall back to time window (Wed 12:00 UTC)
+        var epochData = (currentEpoch > 0
+            ? _fullHistory.Where(h => h.QubicEpoch == currentEpoch || h.Timestamp.UtcDateTime >= epochStart)
+            : _fullHistory.Where(h => h.Timestamp.UtcDateTime >= epochStart))
+            .OrderBy(h => h.Timestamp)
+            .ToList();
+
+        if (epochData.Count == 0) return;
+
+        // Group by epoch-day index (0=Wed, 1=Thu, …, 6=Tue), each day is 24h from noon
+        string[] dayNames = ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue"];
+
+        var byDay = epochData
+            .GroupBy(h => (int)((h.Timestamp.UtcDateTime - epochStart).TotalHours / 24))
+            .Where(g => g.Key >= 0 && g.Key < 7)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        if (byDay.Count == 0) return;
+
+        _epochTimelineSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "GH/s",
+                Data = byDay.Select(g => g.Average(h => h.Hashrate / 1_000_000_000.0)).ToArray()
+            }
+        ];
+
+        _epochTimelineLabels = byDay.Select(g => dayNames[Math.Clamp(g.Key, 0, 6)]).ToArray();
+    }
+
+    private static DateTime GetEpochStart(DateTime utcTime)
+    {
+        // Last Wednesday 12:00 UTC at or before utcTime
+        var candidate = utcTime.Date.AddHours(12);
+        int daysBack = ((int)candidate.DayOfWeek - (int)DayOfWeek.Wednesday + 7) % 7;
+        candidate = candidate.AddDays(-daysBack);
+        if (candidate > utcTime) candidate = candidate.AddDays(-7);
+        return candidate;
+    }
+
+    private string FormatUptime(long seconds)
+    {
+        var ts = TimeSpan.FromSeconds(seconds);
+        if (ts.TotalDays >= 1) return $"{(int)ts.TotalDays}d {ts.Hours}h {ts.Minutes}m";
+        if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours}h {ts.Minutes}m";
+        return $"{ts.Minutes}m {ts.Seconds}s";
+    }
+
+    public void Dispose()
+    {
+        _countdownTimer?.Dispose();
+        _refreshTimer?.Dispose();
+    }
+}

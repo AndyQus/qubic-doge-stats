@@ -1,0 +1,16 @@
+<MudPaper Class="glass-card pa-3" Elevation="0" Style="height: 100%;">
+    <div class="d-flex align-center gap-2 mb-1">
+        <MudIcon Icon="@Icon" Style="@($"color: {Color}; font-size: 1.4rem;")" />
+        <MudText Class="stat-card-label" Style="font-size: 0.75rem; font-weight: 500; letter-spacing: 0.5px;">
+            @Title.ToUpper()
+        </MudText>
+    </div>
+    <MudText Typo="Typo.h5" Style="@($"color: {Color}; font-weight: 700;")">@Value</MudText>
+</MudPaper>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Color { get; set; } = "#7e6fff";
+}

@@ -220,25 +220,49 @@ else
     </MudItem>
 </MudGrid>
 
-@* ===== SOLUTIONS PER EPOCH (full width) ===== *@
-<MudPaper Class="glass-card pa-4 mb-4" Elevation="0">
-    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Solutions Accepted per Epoch</MudText>
-    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Delta solutions accepted within each epoch</MudText>
-    @if (_epochSolutionsSeries.Count > 0)
-    {
-        <MudChart ChartType="ChartType.Bar"
-                  ChartSeries="@_epochSolutionsSeries"
-                  ChartLabels="@_epochLabels"
-                  Width="100%" Height="260px"
-                  ChartOptions="@_epochChartOptions" />
-    }
-    else
-    {
-        <div class="d-flex justify-center align-center" style="height:260px;">
-            <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
-        </div>
-    }
-</MudPaper>
+@* ===== SOLUTIONS + POOL SHARES PER EPOCH ===== *@
+<MudGrid Class="mb-4">
+    <MudItem xs="12" md="6">
+        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
+            <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Solutions per Epoch</MudText>
+            <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted, rejected and stale solutions per epoch</MudText>
+            @if (_epochSolutionsDetailSeries.Count > 0)
+            {
+                <MudChart ChartType="ChartType.Bar"
+                          ChartSeries="@_epochSolutionsDetailSeries"
+                          ChartLabels="@_epochLabels"
+                          Width="100%" Height="260px"
+                          ChartOptions="@_epochChartOptions" />
+            }
+            else
+            {
+                <div class="d-flex justify-center align-center" style="height:260px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
+            <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Pool Shares per Epoch</MudText>
+            <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted vs. rejected pool shares per epoch</MudText>
+            @if (_epochPoolSeries.Count > 0)
+            {
+                <MudChart ChartType="ChartType.Bar"
+                          ChartSeries="@_epochPoolSeries"
+                          ChartLabels="@_epochLabels"
+                          Width="100%" Height="260px"
+                          ChartOptions="@_epochChartOptions" />
+            }
+            else
+            {
+                <div class="d-flex justify-center align-center" style="height:260px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
     [CascadingParameter(Name = "IsDarkMode")] private bool IsDarkMode { get; set; } = true;
@@ -279,7 +303,8 @@ else
 
     // Epoch comparison charts (side by side)
     private List<ChartSeries<double>> _epochHashrateSeries = [];
-    private List<ChartSeries<double>> _epochSolutionsSeries = [];
+    private List<ChartSeries<double>> _epochSolutionsDetailSeries = [];
+    private List<ChartSeries<double>> _epochPoolSeries = [];
     private string[] _epochLabels = [];
     private BarChartOptions _epochChartOptions => new BarChartOptions
     {
@@ -400,15 +425,55 @@ else
             }
         ];
 
-        _epochSolutionsSeries =
+        _epochSolutionsDetailSeries =
         [
             new ChartSeries<double>
             {
-                Name = "Solutions Accepted",
+                Name = "Accepted",
                 Data = epochs.Select(g =>
                 {
                     var sorted = g.OrderBy(x => x.Timestamp).ToList();
                     return (double)Math.Max(0, sorted.Last().SolutionsAccepted - sorted.First().SolutionsAccepted);
+                }).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "Rejected",
+                Data = epochs.Select(g =>
+                {
+                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
+                    return (double)Math.Max(0, sorted.Last().SolutionsRejected - sorted.First().SolutionsRejected);
+                }).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "Stale",
+                Data = epochs.Select(g =>
+                {
+                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
+                    return (double)Math.Max(0, sorted.Last().SolutionsStale - sorted.First().SolutionsStale);
+                }).ToArray()
+            }
+        ];
+
+        _epochPoolSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Accepted",
+                Data = epochs.Select(g =>
+                {
+                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
+                    return (double)Math.Max(0, sorted.Last().PoolAccepted - sorted.First().PoolAccepted);
+                }).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "Rejected",
+                Data = epochs.Select(g =>
+                {
+                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
+                    return (double)Math.Max(0, sorted.Last().PoolRejected - sorted.First().PoolRejected);
                 }).ToArray()
             }
         ];

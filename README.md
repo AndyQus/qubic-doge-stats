@@ -4,6 +4,8 @@ Real-time mining statistics dashboard for **Qubic × Dogecoin** mining operation
 
 Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://doge-stats.qubic.org) API and stored locally. A Blazor WebAssembly frontend visualizes hashrate, pool stats, epoch history, and more.
 
+![Dashboard](docs/dashboard.png)
+
 ---
 
 ## Features

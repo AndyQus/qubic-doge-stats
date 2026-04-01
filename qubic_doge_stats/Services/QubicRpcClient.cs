@@ -22,6 +22,16 @@ public class QubicRpcClient
             var json = await _http.GetStringAsync("v1/tick-info", ct);
             return JsonSerializer.Deserialize<QubicTickInfoResponse>(json, _jsonOptions);
         }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogWarning("Qubic RPC timeout: {Message}", ex.Message);
+            return null;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning("Qubic RPC unreachable: {Message}", ex.Message);
+            return null;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch Qubic tick info");

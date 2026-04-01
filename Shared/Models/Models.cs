@@ -88,3 +88,69 @@ public class TickInfo
     public int Epoch { get; set; }
     public long InitialTick { get; set; }
 }
+
+// PoolBlock — one confirmed or pending DOGE block find, stored permanently
+public class PoolBlock
+{
+    [BsonId(autoId: true)]
+    public ObjectId Id { get; set; } = ObjectId.NewObjectId();
+    public long Height { get; set; }
+    public string Hash { get; set; } = "";
+    public string Worker { get; set; } = "";
+    public DateTimeOffset Time { get; set; }
+    public bool Confirmed { get; set; }
+    public int QubicEpoch { get; set; }
+}
+
+// Live stats from pool.json (not persisted, just passed through to frontend)
+public class PoolLiveStats
+{
+    public DateTimeOffset SessionStart { get; set; }
+    public int SharesValid { get; set; }
+    public int SharesInvalid { get; set; }
+    public int BlocksFound { get; set; }
+    public int BlocksConfirmed { get; set; }
+    public DateTimeOffset? LastShareTime { get; set; }
+    public DateTimeOffset? LastBlockTime { get; set; }
+    public long? LastBlockHeight { get; set; }
+}
+
+// pool.json API response model — matches real API structure
+// {"uptime":34933,"shares":{"valid":61283,"invalid":129},"blocks":{"found":0,"confirmed":0},
+//  "lastShare":"2026-04-01T10:31:24.050Z","lastBlock":null,"recentBlocks":[]}
+public class PoolJsonResponse
+{
+    public long Uptime { get; set; }
+    public PoolJsonShares Shares { get; set; } = new();
+    public PoolJsonBlocks Blocks { get; set; } = new();
+    public DateTimeOffset? LastShare { get; set; }
+    public PoolJsonLastBlock? LastBlock { get; set; }
+    public List<PoolJsonBlock> RecentBlocks { get; set; } = [];
+}
+
+public class PoolJsonShares
+{
+    public int Valid { get; set; }
+    public int Invalid { get; set; }
+}
+
+public class PoolJsonBlocks
+{
+    public int Found { get; set; }
+    public int Confirmed { get; set; }
+}
+
+public class PoolJsonLastBlock
+{
+    public long Height { get; set; }
+    public DateTimeOffset Time { get; set; }
+}
+
+public class PoolJsonBlock
+{
+    public long Height { get; set; }
+    public string Hash { get; set; } = "";
+    public string Worker { get; set; } = "";
+    public DateTimeOffset Time { get; set; }
+    public bool Confirmed { get; set; }
+}

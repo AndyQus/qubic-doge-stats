@@ -31,6 +31,15 @@ builder.Services.AddHttpClient<QubicRpcClient>(client =>
 
 builder.Services.AddHostedService<DogeStatsPollingWorker>();
 
+// Pool stats HTTP client
+builder.Services.AddHttpClient<PoolStatsClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["PoolStats:ApiUrl"] ?? "https://doge-stats.qubic.org/pool.json");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddHostedService<PoolPollingWorker>();
+
 // CORS
 builder.Services.AddCors(options =>
 {

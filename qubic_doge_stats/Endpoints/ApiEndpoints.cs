@@ -1,4 +1,5 @@
 using qubic_doge_stats.Infrastructure;
+using qubic_doge_stats.Workers;
 
 namespace qubic_doge_stats.Endpoints;
 
@@ -19,5 +20,18 @@ public static class ApiEndpoints
             var snapshots = db.GetSnapshots(Math.Min(limit, 10080));
             return Results.Ok(snapshots);
         });
+
+        api.MapGet("/pool/latest", () =>
+        {
+            var stats = PoolPollingWorker.LatestStats;
+            return stats is not null ? Results.Ok(stats) : Results.NotFound();
+        });
+
+        api.MapGet("/pool/blocks", (LiteDbContext db) =>
+        {
+            var blocks = db.GetAllPoolBlocks();
+            return Results.Ok(blocks);
+        });
+
     }
 }

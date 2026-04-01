@@ -20,4 +20,16 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<List<HashrateSnapshot>>($"/api/snapshots/history?limit={limit}") ?? []; }
         catch { return []; }
     }
+
+    public async Task<PoolLiveStats?> GetPoolStatsAsync()
+    {
+        try { return await _http.GetFromJsonAsync<PoolLiveStats>("/api/pool/latest"); }
+        catch { return null; }
+    }
+
+    public async Task<List<PoolBlock>> GetPoolBlocksAsync()
+    {
+        try { return await _http.GetFromJsonAsync<List<PoolBlock>>("/api/pool/blocks") ?? []; }
+        catch { return []; }
+    }
 }

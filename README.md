@@ -18,16 +18,15 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 - **DOGE price** (USD) — polled hourly from CoinPaprika
 - Qubic epoch tracking with automatic epoch-change detection
 - Epoch comparison charts (hashrate, solutions & pool shares per epoch)
-- Current epoch timeline chart (day-by-day breakdown)
+- Current epoch timeline chart (day-by-day breakdown, avg hashrate per day)
 - Today's hashrate by hour
-- Countdown to the next epoch transition
 - **Tooltips on all stat cards** — hover the info icon for an explanation of each metric
 - **Dogecoin Pool Dashboard** (tabbed on home page):
   - Live pool stats: blocks found/confirmed, shares valid/invalid, session uptime
   - Blocks per epoch bar chart
   - Recent blocks table with links to Dogechain Explorer
   - Full block history table
-- Light / dark mode
+- **Light / dark mode** with iOS-style glassmorphism panels in light mode
 - Fully self-hosted via Docker
 
 ---

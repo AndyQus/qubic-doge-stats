@@ -73,38 +73,6 @@
     stroke-width: 2.5px !important;
 }
 
-/* Digital Countdown Block */
-.countdown-block {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 80px;
-}
-
-.countdown-value {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 3.5rem;
-    font-weight: 700;
-    color: #7e6fff;
-    background: rgba(126, 111, 255, 0.1);
-    border: 1px solid rgba(126, 111, 255, 0.3);
-    border-radius: 8px;
-    padding: 8px 16px;
-    min-width: 90px;
-    text-align: center;
-    letter-spacing: 4px;
-    text-shadow: 0 0 20px rgba(126, 111, 255, 0.8);
-}
-
-.theme-light .countdown-label { color: rgba(20, 20, 50, 0.55); }
-
-.countdown-label {
-    font-size: 0.65rem;
-    color: rgba(255,255,255,0.5);
-    letter-spacing: 2px;
-    margin-top: 4px;
-    font-weight: 600;
-}
 
 .app-header-bar {
     height: auto !important;
@@ -193,45 +161,40 @@
     border-radius: 12px !important;
 }
 
-/* ===== Light mode: iOS-style ambient gradient background ===== */
+/* ===== Light mode: off-white background with subtle lavender tint ===== */
 .theme-light .mud-main-content {
-    background: linear-gradient(
-        135deg,
-        #ffddb8 0%,
-        #b8d8f8 28%,
-        #cbb8f0 56%,
-        #a8d8f0 80%,
-        #d0b8f8 100%
-    ) !important;
-    background-attachment: fixed !important;
-    min-height: calc(100vh - 56px);
+    background: linear-gradient(160deg, #f5f4fe 0%, #f9f8ff 40%, #f0f4ff 100%) !important;
 }
 
 /* ===== Light mode: iPhone-style glassmorphism ===== */
 .theme-light .glass-card {
-    background: rgba(255, 255, 255, 0.52) !important;
-    backdrop-filter: blur(24px) saturate(180%) brightness(1.05) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    background: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(20px) saturate(200%) brightness(1.02) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(200%) brightness(1.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.85) !important;
     border-radius: 16px !important;
     box-shadow:
-        0 4px 24px rgba(0, 0, 0, 0.07),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+        0 2px 0 rgba(255, 255, 255, 0.9),
+        0 4px 16px rgba(126, 111, 255, 0.07),
+        0 8px 32px rgba(0, 0, 0, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 1) !important;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .theme-light .glass-card:hover {
     box-shadow:
-        0 8px 32px rgba(126, 111, 255, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
-    border-color: rgba(126, 111, 255, 0.4) !important;
+        0 2px 0 rgba(255, 255, 255, 0.9),
+        0 8px 28px rgba(126, 111, 255, 0.16),
+        0 16px 48px rgba(0, 0, 0, 0.09),
+        inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    border-color: rgba(126, 111, 255, 0.35) !important;
 }
 
 .theme-light .glass {
-    background: rgba(255, 255, 255, 0.45) !important;
-    backdrop-filter: blur(24px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.65) !important;
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(20px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
     border-radius: 16px !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
 }
@@ -249,6 +212,34 @@
 .theme-light .glass-card [style*="color:#"] {
     opacity: 1;
 }
+
+/* ===== Light mode: MudTabs transparent background ===== */
+.theme-light .mud-tabs,
+.theme-light .mud-tab-panels,
+.theme-light .mud-tabs-panels {
+    background: transparent !important;
+}
+
+.theme-light .mud-tabs .mud-tab {
+    background: rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-radius: 8px 8px 0 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    border-bottom: none !important;
+    margin-right: 4px;
+    color: rgba(20, 20, 50, 0.7) !important;
+}
+
+.theme-light .mud-tabs .mud-tab.mud-tab-active {
+    background: rgba(255, 255, 255, 0.65) !important;
+    color: #7e6fff !important;
+    border-color: rgba(126, 111, 255, 0.3) !important;
+}
+
+/* StatCard tooltip info icon */
+.theme-dark  .stat-card-info-icon { color: rgba(255, 255, 255, 0.30) !important; }
+.theme-light .stat-card-info-icon { color: rgba(20,  20,  50,  0.35) !important; }
 
 .footer-container {
     background-color: #0f1220;

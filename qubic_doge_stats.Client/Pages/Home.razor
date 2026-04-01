@@ -4,30 +4,6 @@
 
 <PageTitle>Qubic Doge Stats</PageTitle>
 
-@* ===== COUNTDOWN (nur sichtbar vor Mining-Start) ===== *@
-@if (!_miningStarted)
-{
-    <MudPaper Class="glass pa-4 mb-4" Elevation="0" Style="background: linear-gradient(135deg, rgba(16,24,48,0.7) 0%, rgba(26,32,64,0.7) 100%) !important; border: 1px solid rgba(126,111,255,0.35) !important;">
-        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-2" Style="color: #4EE0FC; font-weight: 600; letter-spacing: 2px;">
-            QUBIC x DOGECOIN MINING STARTS IN
-        </MudText>
-        <div class="d-flex justify-center align-center gap-2 flex-wrap">
-            @{ var units = new[] { (_days, "DAYS"), (_hours, "HOURS"), (_minutes, "MIN"), (_seconds, "SEC") }; }
-            @for (int i = 0; i < units.Length; i++)
-            {
-                @if (i > 0)
-                {
-                    <MudText Typo="Typo.h2" Style="color: #7e6fff; font-weight: 700; line-height: 1;">:</MudText>
-                }
-                <CountdownBlock Value="@units[i].Item1" Label="@units[i].Item2" />
-            }
-        </div>
-        <MudText Align="Align.Center" Class="mt-2 dim-text" Style="font-size: 0.8rem;">
-            April 1, 2026 - 12:00:00 UTC
-        </MudText>
-    </MudPaper>
-}
-
 @* ===== STATS CARDS ===== *@
 @if (_latest is not null)
 {
@@ -35,7 +11,7 @@
         <MudItem xs="12" sm="6">
             <StatCard Icon="@Icons.Material.Filled.Speed"
                       Title="Hashrate"
-                      Value="@(string.IsNullOrEmpty(_latest.HashrateDisplay) ? $"{ToGigaHashPerSecond(_latest.Hashrate):F1} GH/s" : _latest.HashrateDisplay)"
+                      Value="@FormatHashrateDisplay(_latest.Hashrate, _latest.HashrateDisplay)"
                       Color="#7e6fff"
                       Tooltip="Current mining hashrate of the pool – the combined number of hashes per second computed by all connected miners." />
         </MudItem>
@@ -51,7 +27,7 @@
         <MudItem xs="12" sm="6">
             <StatCard Icon="@Icons.Material.Filled.TrendingUp"
                       Title="All-Time Peak Hashrate"
-                      Value="@($"{(_peakSnapshot is not null ? ToGigaHashPerSecond(_peakSnapshot.Hashrate) : 0):F1} GH/s{(_peakSnapshot?.QubicEpoch > 0 ? $" · E{_peakSnapshot!.QubicEpoch}" : "")}")"
+                      Value="@($"{(_peakSnapshot is not null ? FormatHashrateDisplay(_peakSnapshot.Hashrate, _peakSnapshot.HashrateDisplay) : "–")}{(_peakSnapshot?.QubicEpoch > 0 ? $" · E{_peakSnapshot!.QubicEpoch}" : "")}")"
                       Color="#FFD700"
                       Tooltip="Highest hashrate ever recorded by the pool, including the epoch in which it was reached." />
         </MudItem>
@@ -178,7 +154,7 @@
 }
 else
 {
-    <MudPaper Class="pa-6 mb-4 d-flex justify-center align-center" Elevation="1">
+    <MudPaper Class="glass-card pa-6 mb-4 d-flex justify-center align-center" Elevation="0">
         <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
         <MudText Class="ml-4 dim-text">Loading stats...</MudText>
     </MudPaper>
@@ -220,7 +196,7 @@ else
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
                     <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Hashrate (GH/s)</MudText>
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Avg Hashrate (GH/s)</MudText>
                         <div class="d-flex flex-column align-end">
                             <MudText Typo="Typo.caption" Class="dim-text">
                                 @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by hour
@@ -256,14 +232,12 @@ else
         <MudGrid Class="mb-2">
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
-                    <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">
-                            Current Epoch @(_latest?.QubicEpoch > 0 ? $"· Epoch {_latest.QubicEpoch}" : "") · Hashrate (GH/s)
-                        </MudText>
-                        <MudText Typo="Typo.caption" Class="dim-text">
-                            Wed 12:00 UTC → next Wed 12:00 UTC
-                        </MudText>
-                    </div>
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">
+                        Current Epoch @(_latest?.QubicEpoch > 0 ? $"· Epoch {_latest.QubicEpoch}" : "") · Avg Hashrate (GH/s)
+                    </MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">
+                        Wed 12:00 UTC → next Wed 12:00 UTC
+                    </MudText>
                     @if (_epochTimelineSeries.Count > 0)
                     {
                         <MudChart ChartType="ChartType.Line"
@@ -377,9 +351,9 @@ else
                     }
                     else
                     {
-                        <div class="d-flex justify-center align-center" style="height:260px;">
+                        <div class="d-flex flex-column justify-center align-center gap-3" style="height:260px;">
+                            <MudText Class="dim-text">No block data yet…</MudText>
                             <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                            <MudText Class="ml-3 dim-text">No block data yet…</MudText>
                         </div>
                     }
                 </MudPaper>
@@ -522,14 +496,7 @@ else
     private static readonly string[] _darkPalette = ["#7e6fff", "#4EE0FC", "#4caf50", "#ff9800", "#f44336"];
     private static readonly string[] _lightPalette = ["#3d1fcc", "#006f8a", "#1b5e20", "#bf3600", "#8b0000"];
 
-    // Countdown target: April 1, 2026 12:00:00 UTC
-    private static readonly DateTimeOffset MiningStart = new DateTimeOffset(2026, 4, 1, 12, 0, 0, TimeSpan.Zero);
-
-    private System.Threading.Timer? _countdownTimer;
     private System.Threading.Timer? _refreshTimer;
-
-    private int _days, _hours, _minutes, _seconds;
-    private bool _miningStarted;
 
     private const decimal DogeBlockReward = 10_000m;
 
@@ -589,37 +556,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        UpdateCountdown();
-        _countdownTimer = new System.Threading.Timer(_ =>
-        {
-            UpdateCountdown();
-            InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-
         await RefreshDataAsync();
         _refreshTimer = new System.Threading.Timer(async _ =>
         {
             await RefreshDataAsync();
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
-    }
-
-    private void UpdateCountdown()
-    {
-        var remaining = MiningStart - DateTimeOffset.UtcNow;
-        if (remaining <= TimeSpan.Zero)
-        {
-            _miningStarted = true;
-            _days = _hours = _minutes = _seconds = 0;
-        }
-        else
-        {
-            _miningStarted = false;
-            _days = (int)remaining.TotalDays;
-            _hours = remaining.Hours;
-            _minutes = remaining.Minutes;
-            _seconds = remaining.Seconds;
-        }
     }
 
     private async Task RefreshDataAsync()
@@ -791,23 +733,31 @@ else
 
     private void BuildEpochTimelineData()
     {
-        var currentEpoch = _latest?.QubicEpoch ?? 0;
-        var epochStart = GetEpochStart(DateTimeOffset.UtcNow.UtcDateTime);
+        _epochTimelineSeries = [];
+        _epochTimelineLabels = [];
 
-        // If epoch tag is available use it; otherwise fall back to time window (Wed 12:00 UTC)
-        var epochData = (currentEpoch > 0
-            ? _fullHistory.Where(h => h.QubicEpoch == currentEpoch || h.Timestamp.UtcDateTime >= epochStart)
-            : _fullHistory.Where(h => h.Timestamp.UtcDateTime >= epochStart))
+        var currentEpoch = _latest?.QubicEpoch ?? 0;
+        if (currentEpoch == 0 || _fullHistory.Count == 0) return;
+
+        // Filter by epoch tag — includes early-reporting snapshots before 12:00 UTC
+        var epochData = _fullHistory
+            .Where(h => h.QubicEpoch == currentEpoch)
             .OrderBy(h => h.Timestamp)
             .ToList();
 
         if (epochData.Count == 0) return;
 
-        // Group by epoch-day index (0=Wed, 1=Thu, …, 6=Tue), each day is 24h from noon
-        string[] dayNames = ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue"];
+        // Use Wed 12:00 UTC boundary of this epoch as reference start;
+        // clamp backwards if RPC reported the epoch a few minutes early.
+        var epochStart = GetEpochStart(epochData.Last().Timestamp.UtcDateTime);
+        var actualStart = epochData[0].Timestamp.UtcDateTime < epochStart
+            ? epochData[0].Timestamp.UtcDateTime
+            : epochStart;
+
+        string[] allDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
         var byDay = epochData
-            .GroupBy(h => (int)((h.Timestamp.UtcDateTime - epochStart).TotalHours / 24))
+            .GroupBy(h => (int)((h.Timestamp.UtcDateTime - actualStart).TotalHours / 24))
             .Where(g => g.Key >= 0 && g.Key < 7)
             .OrderBy(g => g.Key)
             .ToList();
@@ -818,13 +768,14 @@ else
         [
             new ChartSeries<double>
             {
-                Name = "GH/s",
+                Name = "Avg GH/s",
                 Data = byDay.Select(g => g.Average(h => ToGigaHashPerSecond(h.Hashrate))).ToArray(),
                 TooltipYValueFormat = "F2"
             }
         ];
 
-        _epochTimelineLabels = byDay.Select(g => dayNames[Math.Clamp(g.Key, 0, 6)]).ToArray();
+        int startDow = (int)actualStart.DayOfWeek;
+        _epochTimelineLabels = byDay.Select(g => allDays[(startDow + g.Key) % 7]).ToArray();
     }
 
     private static DateTime GetEpochStart(DateTime utcTime)
@@ -838,6 +789,15 @@ else
     }
 
     private static double ToGigaHashPerSecond(double hashrate) => hashrate / 1_000_000_000.0;
+
+    private static string FormatHashrateDisplay(long hashrate, string apiDisplay)
+    {
+        if (hashrate >= 1_000_000_000_000L)
+            return $"{hashrate / 1_000_000_000_000.0:F2} TH/s";
+        return string.IsNullOrEmpty(apiDisplay)
+            ? $"{hashrate / 1_000_000_000.0:F1} GH/s"
+            : apiDisplay;
+    }
 
     private string FormatUptime(long seconds)
     {
@@ -856,7 +816,6 @@ else
 
     public void Dispose()
     {
-        _countdownTimer?.Dispose();
         _refreshTimer?.Dispose();
     }
 }

@@ -49,6 +49,15 @@ builder.Services.AddHttpClient<DogeExplorerClient>(client =>
 
 builder.Services.AddHostedService<DogeExplorerPollingWorker>();
 
+// DOGE price HTTP client (CoinPaprika - free, no API key)
+builder.Services.AddHttpClient<DogePriceClient>(client =>
+{
+    client.BaseAddress = new Uri("https://api.coinpaprika.com/v1/tickers/doge-dogecoin");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
+builder.Services.AddHostedService<DogePricePollingWorker>();
+
 // CORS
 builder.Services.AddCors(options =>
 {

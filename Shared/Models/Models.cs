@@ -158,6 +158,14 @@ public class PoolJsonBlock
 // DOGE network stats from Dogecoin explorer (blockchair.com)
 public class DogeNetworkStats
 {
-    public long NetworkHashrate { get; set; }  // H/s (24h average)
+    public long NetworkHashrate { get; set; }   // H/s (24h average)
+    public long BestBlockHeight { get; set; }   // current chain tip
+    public DateTimeOffset FetchedAt { get; set; }
+}
+
+// DOGE price from CoinPaprika
+public class DogePriceStats
+{
+    public decimal UsdPrice { get; set; }
     public DateTimeOffset FetchedAt { get; set; }
 }

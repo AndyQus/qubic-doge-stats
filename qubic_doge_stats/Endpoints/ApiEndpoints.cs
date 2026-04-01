@@ -1,6 +1,5 @@
 using qubic_doge_stats.Infrastructure;
 using qubic_doge_stats.Workers;
-using qubic_doge_stats.Shared.Models;
 
 namespace qubic_doge_stats.Endpoints;
 
@@ -38,6 +37,12 @@ public static class ApiEndpoints
         {
             var stats = DogeExplorerPollingWorker.LatestStats;
             return stats is not null ? Results.Ok(stats) : Results.NotFound();
+        });
+
+        api.MapGet("/doge/price", () =>
+        {
+            var price = DogePricePollingWorker.LatestPrice;
+            return price is not null ? Results.Ok(price) : Results.NotFound();
         });
 
     }

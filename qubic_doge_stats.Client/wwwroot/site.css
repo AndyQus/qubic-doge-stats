@@ -193,28 +193,46 @@
     border-radius: 12px !important;
 }
 
+/* ===== Light mode: iOS-style ambient gradient background ===== */
+.theme-light .mud-main-content {
+    background: linear-gradient(
+        135deg,
+        #ffddb8 0%,
+        #b8d8f8 28%,
+        #cbb8f0 56%,
+        #a8d8f0 80%,
+        #d0b8f8 100%
+    ) !important;
+    background-attachment: fixed !important;
+    min-height: calc(100vh - 56px);
+}
+
 /* ===== Light mode: iPhone-style glassmorphism ===== */
 .theme-light .glass-card {
-    background: rgba(255, 255, 255, 0.55) !important;
-    backdrop-filter: blur(20px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.75) !important;
-    border-radius: 14px !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.9) !important;
+    background: rgba(255, 255, 255, 0.52) !important;
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.05) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    border-radius: 16px !important;
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .theme-light .glass-card:hover {
-    box-shadow: 0 8px 32px rgba(126, 111, 255, 0.18), inset 0 1px 0 rgba(255,255,255,0.9) !important;
-    border-color: rgba(126, 111, 255, 0.35) !important;
+    box-shadow:
+        0 8px 32px rgba(126, 111, 255, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(126, 111, 255, 0.4) !important;
 }
 
 .theme-light .glass {
     background: rgba(255, 255, 255, 0.45) !important;
-    backdrop-filter: blur(20px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
     border: 1px solid rgba(255, 255, 255, 0.65) !important;
-    border-radius: 14px !important;
+    border-radius: 16px !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
 }
 

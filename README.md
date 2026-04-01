@@ -11,14 +11,17 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 ## Features
 
 - Live hashrate monitoring (GH/s) with 60-minute trend chart
+- **Pool Share of Network** — pool hashrate as a percentage of total DOGE network hashrate (24h average)
 - Pool stats: accepted / rejected / submitted shares
 - Solutions tracking: accepted, received, rejected, stale
 - Connected peers and active tasks
+- **DOGE price** (USD) — polled hourly from CoinPaprika
 - Qubic epoch tracking with automatic epoch-change detection
 - Epoch comparison charts (hashrate, solutions & pool shares per epoch)
 - Current epoch timeline chart (day-by-day breakdown)
 - Today's hashrate by hour
 - Countdown to the next epoch transition
+- **Tooltips on all stat cards** — hover the info icon for an explanation of each metric
 - **Dogecoin Pool Dashboard** (tabbed on home page):
   - Live pool stats: blocks found/confirmed, shares valid/invalid, session uptime
   - Blocks per epoch bar chart
@@ -36,25 +39,32 @@ External APIs
   https://doge-stats.qubic.org/dispatcher.json   (mining stats)
   https://doge-stats.qubic.org/pool.json          (DOGE pool stats)
   https://rpc.qubic.org/v1/tick-info              (Qubic epoch)
-           │                  │                  │
-   DogeStatsClient    PoolStatsClient     QubicRpcClient
-           └──────────┬───────┘                  │
-                      │              DogeStatsPollingWorker
-          PoolPollingWorker          (every 60 s, epoch-aware)
-          (every 60 s)                            │
-                │                        HashrateSnapshot
-           PoolBlock                              │
-                └──────────────┬─────────────────┘
-                               │
-                    LiteDB  (doge_stats.db)
-                               │
-              ┌────────────────┴────────────────┐
-              │                                  │
-     Minimal API (ASP.NET)              Blazor WASM (Client)
-     /api/snapshots/latest              Home.razor
-     /api/snapshots/history               ├─ Tab: Hashrate charts
-     /api/pool/latest                     └─ Tab: Pool dashboard
+  https://api.blockchair.com/dogecoin/stats        (DOGE network hashrate)
+  https://api.coinpaprika.com/v1/tickers/doge-dogecoin  (DOGE price)
+           │          │          │          │          │
+  DogeStatsClient  PoolStats  QubicRpc  DogeExplorer DogePriceClient
+      Client        Client    Client      Client     (every 1 h)
+           │          │          │          │
+  DogeStatsPolling  PoolPolling  │   DogeExplorerPolling
+     Worker         Worker       │       Worker
+  (every 60 s,    (every 60 s)  │     (every 5 min)
+   epoch-aware)        │         │
+           │       PoolBlock  HashrateSnapshot
+           │           └──────────┬──────────┘
+           │                      │
+           │           LiteDB  (doge_stats.db)
+           │                      │
+           └──────────────────────┤
+                                  │
+              ┌───────────────────┴─────────────────┐
+              │                                       │
+     Minimal API (ASP.NET)               Blazor WASM (Client)
+     /api/snapshots/latest               Home.razor
+     /api/snapshots/history                ├─ Tab: Hashrate charts
+     /api/pool/latest                      └─ Tab: Pool dashboard
      /api/pool/blocks
+     /api/network/stats
+     /api/doge/price
 ```
 
 ---
@@ -152,6 +162,39 @@ Returns all stored Dogecoin block finds, ordered by time (newest first).
 
 ---
 
+### `GET /api/network/stats`
+
+Returns the latest DOGE network stats fetched from blockchair.com (refreshed every 5 minutes).
+
+**Response `200 OK`:**
+```json
+{
+  "networkHashrate": 1578374434381559,
+  "bestBlockHeight": 6148000,
+  "fetchedAt": "2026-04-01T10:00:00Z"
+}
+```
+
+**Response `404 Not Found`** — no network data collected yet.
+
+---
+
+### `GET /api/doge/price`
+
+Returns the latest DOGE/USD price from CoinPaprika (refreshed every hour).
+
+**Response `200 OK`:**
+```json
+{
+  "usdPrice": 0.1234,
+  "fetchedAt": "2026-04-01T10:00:00Z"
+}
+```
+
+**Response `404 Not Found`** — no price data collected yet.
+
+---
+
 ## Data Models
 
 ### `HashrateSnapshot`
@@ -177,6 +220,25 @@ Returns all stored Dogecoin block finds, ordered by time (newest first).
 | `queueSolutions` | `int` | `queues.solutions` | Solutions in queue |
 | `queueStratum` | `int` | `queues.stratum` | Stratum connections in queue |
 | `qubicEpoch` | `int` | `rpc.qubic.org` | Current Qubic epoch number |
+
+### `DogeNetworkStats`
+
+Fetched every 5 minutes from blockchair.com. Not persisted to database — held in memory only.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `networkHashrate` | `long` | 24h average DOGE network hashrate in H/s |
+| `bestBlockHeight` | `long` | Current chain tip (best block height) |
+| `fetchedAt` | `DateTimeOffset` | UTC time of the last successful fetch |
+
+### `DogePriceStats`
+
+Fetched every hour from CoinPaprika. Not persisted — held in memory only.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `usdPrice` | `decimal` | Current DOGE price in USD |
+| `fetchedAt` | `DateTimeOffset` | UTC time of the last successful fetch |
 
 ### `PoolBlock`
 
@@ -285,6 +347,8 @@ The database is persisted in a named Docker volume (`qubic_doge_data`).
 | DogeStats API | `https://doge-stats.qubic.org/dispatcher.json` | Mining pool statistics |
 | Pool Stats API | `https://doge-stats.qubic.org/pool.json` | DOGE block finds & share counts |
 | Qubic RPC | `https://rpc.qubic.org/v1/tick-info` | Current epoch / tick info |
+| Blockchair | `https://api.blockchair.com/dogecoin/stats` | DOGE network hashrate (24h avg) |
+| CoinPaprika | `https://api.coinpaprika.com/v1/tickers/doge-dogecoin` | DOGE/USD price |
 
 ---
 

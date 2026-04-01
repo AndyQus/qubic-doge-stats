@@ -21,12 +21,17 @@ public class DogeExplorerClient
         {
             var json = await _http.GetStringAsync("", ct);
             var root = JsonSerializer.Deserialize<BlockchairDogeResponse>(json);
-            var hashrate = root?.Data?.Hashrate24h;
-            if (hashrate is null) return null;
+            var data = root?.Data;
+            if (data is null) return null;
+
+            // blockchair returns hashrate_24h as a string (e.g. "1578374434381559")
+            if (!long.TryParse(data.Hashrate24h, out var hashrate) || hashrate == 0)
+                return null;
 
             return new DogeNetworkStats
             {
-                NetworkHashrate = hashrate.Value,
+                NetworkHashrate = hashrate,
+                BestBlockHeight = data.BestBlockHeight ?? 0,
                 FetchedAt = DateTimeOffset.UtcNow
             };
         }
@@ -47,6 +52,9 @@ public class DogeExplorerClient
     private class BlockchairDogeData
     {
         [JsonPropertyName("hashrate_24h")]
-        public long? Hashrate24h { get; set; }
+        public string? Hashrate24h { get; set; }   // API returns string, not number
+
+        [JsonPropertyName("best_block_height")]
+        public long? BestBlockHeight { get; set; }
     }
 }

@@ -38,4 +38,10 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<DogeNetworkStats>("/api/network/stats"); }
         catch { return null; }
     }
+
+    public async Task<DogePriceStats?> GetDogePriceAsync()
+    {
+        try { return await _http.GetFromJsonAsync<DogePriceStats>("/api/doge/price"); }
+        catch { return null; }
+    }
 }

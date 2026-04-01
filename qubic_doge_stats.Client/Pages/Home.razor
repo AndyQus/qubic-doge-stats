@@ -1,5 +1,6 @@
 @page "/"
 @inject ApiClient Api
+@inject ISnackbar Snackbar
 @implements IDisposable
 
 <PageTitle>Qubic Doge Stats</PageTitle>
@@ -509,6 +510,10 @@ else
     private List<HashrateSnapshot> _fullHistory = [];
     private DateTimeOffset _lastRefresh = DateTimeOffset.UtcNow;
 
+    // Block-found notification tracking
+    private HashSet<string> _knownBlockHashes = [];
+    private bool _blockTrackingReady = false;
+
     // Pool-specific fields
     private List<PoolBlock> _recentBlocks = [];
     private List<ChartSeries<double>> _epochBlockSeries = [];
@@ -556,6 +561,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+        Snackbar.Configuration.PreventDuplicates = false;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 10;
         await RefreshDataAsync();
         _refreshTimer = new System.Threading.Timer(async _ =>
         {
@@ -571,6 +579,7 @@ else
         _networkStats = await Api.GetNetworkStatsAsync();
         _dogePrice = await Api.GetDogePriceAsync();
         _recentBlocks = await Api.GetPoolBlocksAsync();
+        NotifyNewBlocks();
         BuildPoolEpochChart();
         // 10080 = 7 days × 24h × 60min at 60s poll interval (full epoch)
         _fullHistory = await Api.GetHistoryAsync(10080);
@@ -581,6 +590,32 @@ else
         BuildChartData();
         BuildEpochChartData();
         BuildEpochTimelineData();
+    }
+
+    private void NotifyNewBlocks()
+    {
+        if (!_blockTrackingReady)
+        {
+            // First load: seed known hashes, no notifications
+            _knownBlockHashes = _recentBlocks.Select(b => b.Hash).ToHashSet();
+            _blockTrackingReady = true;
+            return;
+        }
+
+        foreach (var block in _recentBlocks.Where(b => !_knownBlockHashes.Contains(b.Hash)))
+        {
+            _knownBlockHashes.Add(block.Hash);
+            var time = block.Time.ToLocalTime().ToString("HH:mm");
+            Snackbar.Add(
+                $"🐕 Block #{block.Height} gefunden! — {time} Uhr",
+                Severity.Success,
+                config =>
+                {
+                    config.VisibleStateDuration = 90 * 60 * 1000; // 90 Minuten
+                    config.ShowCloseIcon = true;
+                    config.DuplicatesBehavior = SnackbarDuplicatesBehavior.Allow;
+                });
+        }
     }
 
     private void BuildPoolEpochChart()

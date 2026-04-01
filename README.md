@@ -2,7 +2,7 @@
 
 Real-time mining statistics dashboard for **Qubic × Dogecoin** mining operations.
 
-Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://doge-stats.qubic.org) API and stored locally. A Blazor WebAssembly frontend visualizes hashrate, pool stats, epoch history, and more.
+Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://doge-stats.qubic.org) API and stored locally. A Blazor WebAssembly frontend visualizes hashrate, pool stats, epoch history, Dogecoin block finds, and more.
 
 ![Dashboard](docs/dashboard.png)
 
@@ -15,10 +15,15 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 - Solutions tracking: accepted, received, rejected, stale
 - Connected peers and active tasks
 - Qubic epoch tracking with automatic epoch-change detection
-- Epoch comparison charts (hashrate & solutions per epoch)
+- Epoch comparison charts (hashrate, solutions & pool shares per epoch)
 - Current epoch timeline chart (day-by-day breakdown)
 - Today's hashrate by hour
 - Countdown to the next epoch transition
+- **Dogecoin Pool Dashboard** (tabbed on home page):
+  - Live pool stats: blocks found/confirmed, shares valid/invalid, session uptime
+  - Blocks per epoch bar chart
+  - Recent blocks table with links to Dogechain Explorer
+  - Full block history table
 - Light / dark mode
 - Fully self-hosted via Docker
 
@@ -29,23 +34,27 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 ```
 External APIs
   https://doge-stats.qubic.org/dispatcher.json   (mining stats)
-  https://rpc.qubic.org/v1/tick-info             (Qubic epoch)
-           │                         │
-     DogeStatsClient          QubicRpcClient
-           └──────────┬────────────┘
-                      │
-          DogeStatsPollingWorker
-          (Background service, every 60 s)
-                      │
-               HashrateSnapshot
-                      │
-            LiteDB  (doge_stats.db)
-                      │
-         ┌────────────┴────────────┐
-         │                         │
-  Minimal API (ASP.NET)     Blazor WASM (Client)
-  /api/snapshots/latest     Home.razor (Dashboard)
-  /api/snapshots/history    StatCard, CountdownBlock
+  https://doge-stats.qubic.org/pool.json          (DOGE pool stats)
+  https://rpc.qubic.org/v1/tick-info              (Qubic epoch)
+           │                  │                  │
+   DogeStatsClient    PoolStatsClient     QubicRpcClient
+           └──────────┬───────┘                  │
+                      │              DogeStatsPollingWorker
+          PoolPollingWorker          (every 60 s, epoch-aware)
+          (every 60 s)                            │
+                │                        HashrateSnapshot
+           PoolBlock                              │
+                └──────────────┬─────────────────┘
+                               │
+                    LiteDB  (doge_stats.db)
+                               │
+              ┌────────────────┴────────────────┐
+              │                                  │
+     Minimal API (ASP.NET)              Blazor WASM (Client)
+     /api/snapshots/latest              Home.razor
+     /api/snapshots/history               ├─ Tab: Hashrate charts
+     /api/pool/latest                     └─ Tab: Pool dashboard
+     /api/pool/blocks
 ```
 
 ---
@@ -100,7 +109,52 @@ Returns the most recent N snapshots, ordered by time (newest first).
 
 ---
 
-## Data Model — `HashrateSnapshot`
+### `GET /api/pool/latest`
+
+Returns the latest live pool stats from the most recent `pool.json` poll.
+
+**Response `200 OK`:**
+```json
+{
+  "sessionStart": "2026-03-31T21:32:27+00:00",
+  "sharesValid": 61283,
+  "sharesInvalid": 129,
+  "blocksFound": 0,
+  "blocksConfirmed": 0,
+  "lastShareTime": "2026-04-01T10:31:24.050Z",
+  "lastBlockTime": null,
+  "lastBlockHeight": null
+}
+```
+
+**Response `404 Not Found`** — no pool data collected yet.
+
+---
+
+### `GET /api/pool/blocks`
+
+Returns all stored Dogecoin block finds, ordered by time (newest first).
+
+**Response `200 OK`:** Array of `PoolBlock` objects:
+```json
+[
+  {
+    "id": "...",
+    "height": 6147250,
+    "hash": "a3f9b7c2...",
+    "worker": "DRcdWw4LyKFanwQvNXAp3y9i3Afi8VZLG3",
+    "time": "2026-04-01T06:40:00Z",
+    "confirmed": true,
+    "qubicEpoch": 180
+  }
+]
+```
+
+---
+
+## Data Models
+
+### `HashrateSnapshot`
 
 | Field | Type | Source | Description |
 |-------|------|--------|-------------|
@@ -124,6 +178,19 @@ Returns the most recent N snapshots, ordered by time (newest first).
 | `queueStratum` | `int` | `queues.stratum` | Stratum connections in queue |
 | `qubicEpoch` | `int` | `rpc.qubic.org` | Current Qubic epoch number |
 
+### `PoolBlock`
+
+Permanently stored whenever a new DOGE block find appears in `pool.json`. Deduplicated by `hash`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `height` | `long` | DOGE block height |
+| `hash` | `string` | Block hash |
+| `worker` | `string` | Worker address that found the block |
+| `time` | `DateTimeOffset` | Time the block was found |
+| `confirmed` | `bool` | Whether the block is confirmed on-chain |
+| `qubicEpoch` | `int` | Derived from block time (Wednesday 12:00 UTC boundary) |
+
 ---
 
 ## Epoch Tracking
@@ -133,6 +200,8 @@ A new Qubic epoch begins every **Wednesday at 12:00 UTC**. The polling worker:
 - Refreshes the epoch from `rpc.qubic.org/v1/tick-info` every **5 minutes** normally
 - During the **Wednesday 11:00–15:00 UTC** transition window: refreshes on **every poll** to catch the changeover as quickly as possible
 - Logs an info message when an epoch change is detected
+
+DOGE block finds are assigned to the correct Qubic epoch using the same Wednesday 12:00 UTC boundary logic.
 
 ---
 
@@ -144,6 +213,7 @@ All settings can be overridden via `appsettings.json`, environment variables, or
 |-----|---------|-------------|
 | `DogeStats:ApiUrl` | `https://doge-stats.qubic.org/dispatcher.json` | Mining stats source |
 | `DogeStats:PollIntervalSeconds` | `60` | Poll interval in seconds |
+| `PoolStats:ApiUrl` | `https://doge-stats.qubic.org/pool.json` | DOGE pool stats source |
 | `QubicRpc:BaseUrl` | `https://rpc.qubic.org/` | Qubic RPC base URL |
 | `LiteDb:Filename` | `Data/doge_stats.db` | LiteDB database file path |
 
@@ -162,7 +232,7 @@ All settings can be overridden via `appsettings.json`, environment variables, or
 **Prerequisites:** .NET 10 SDK
 
 ```bash
-git clone https://github.com/AndyQus/qubic_doge_stats.git
+git clone https://github.com/AndyQus/qubic-doge-stats.git
 cd qubic_doge_stats/qubic_doge_stats
 dotnet run
 ```
@@ -213,6 +283,7 @@ The database is persisted in a named Docker volume (`qubic_doge_data`).
 | Source | URL | Description |
 |--------|-----|-------------|
 | DogeStats API | `https://doge-stats.qubic.org/dispatcher.json` | Mining pool statistics |
+| Pool Stats API | `https://doge-stats.qubic.org/pool.json` | DOGE block finds & share counts |
 | Qubic RPC | `https://rpc.qubic.org/v1/tick-info` | Current epoch / tick info |
 
 ---

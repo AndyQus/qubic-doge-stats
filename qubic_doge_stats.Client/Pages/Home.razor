@@ -31,7 +31,7 @@
 @* ===== STATS CARDS ===== *@
 @if (_latest is not null)
 {
-    <MudGrid Class="mb-4 stats-grid">
+    <MudGrid Class="mb-6 stats-grid">
         <MudItem xs="12" sm="6">
             <StatCard Icon="@Icons.Material.Filled.Speed"
                       Title="Hashrate"
@@ -92,12 +92,31 @@
                       Value="@(_latest.QubicEpoch > 0 ? _latest.QubicEpoch.ToString() : "–")"
                       Color="#4EE0FC" />
         </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Stars"
+                      Title="DOGE Blocks Found"
+                      Value="@(_poolStats?.BlocksFound.ToString("N0") ?? "–")"
+                      Color="#FFD700" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Verified"
+                      Title="DOGE Blocks Confirmed"
+                      Value="@(_poolStats?.BlocksConfirmed.ToString("N0") ?? "–")"
+                      Color="#4caf50" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.CheckCircle"
+                      Title="Pool Shares Valid"
+                      Value="@(_poolStats?.SharesValid.ToString("N0") ?? "–")"
+                      Color="#4EE0FC" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <StatCard Icon="@Icons.Material.Filled.Timer"
+                      Title="Pool Session Uptime"
+                      Value="@(_poolStats is not null ? FormatUptimeSpan(DateTimeOffset.UtcNow - _poolStats.SessionStart) : "–")"
+                      Color="#7e6fff" />
+        </MudItem>
     </MudGrid>
-
-    @* Last updated *@
-    <MudText Class="mb-4 dim-text" Style="font-size: 0.75rem;">
-        Last updated: @_latest.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
-    </MudText>
 }
 else
 {
@@ -107,162 +126,305 @@ else
     </MudPaper>
 }
 
-@* ===== LIVE HASHRATE CHARTS (side by side) ===== *@
-<MudGrid Class="mb-4">
-    <MudItem xs="12" md="6">
-        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
-            <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live Hashrate (GH/s)</MudText>
-                <MudText Typo="Typo.caption" Class="dim-text">
-                    Last update: @_lastRefresh.ToLocalTime().ToString("HH:mm:ss") · auto 60 s
-                </MudText>
-            </div>
-            @if (_history.Count > 1)
-            {
-                <MudChart ChartType="ChartType.Line"
-                          ChartSeries="@_chartSeries"
-                          ChartLabels="@_chartLabels"
-                          Width="100%" Height="280px"
-                          ChartOptions="@_chartOptions" />
-            }
-            else
-            {
-                <div class="d-flex justify-center align-center" style="height:280px;">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                    <MudText Class="ml-3 dim-text">Waiting for data…</MudText>
-                </div>
-            }
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="6">
-        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
-            <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Hashrate (GH/s)</MudText>
-                <div class="d-flex flex-column align-end">
-                    <MudText Typo="Typo.caption" Class="dim-text">
-                        @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by hour
-                    </MudText>
-                    @if (_todayPeak > 0)
-                    {
-                        <MudText Typo="Typo.caption" Style="color: #FFD700;">
-                            Peak: @($"{_todayPeak:F1} GH/s")
+@* ===== TABS ===== *@
+<MudTabs Elevation="0" TabHeaderClass="d-inline-flex mb-4">
+    <MudTabPanel Text="Hashrate" Icon="@Icons.Material.Filled.Speed">
+
+        <MudText Typo="Typo.caption" Class="mb-3 dim-text">Last updated: @_lastRefresh.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+
+        @* ===== LIVE HASHRATE CHARTS (side by side) ===== *@
+        <MudGrid Class="mb-2">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live Hashrate (GH/s)</MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text">
+                            Last update: @_lastRefresh.ToLocalTime().ToString("HH:mm:ss") · auto 60 s
                         </MudText>
+                    </div>
+                    @if (_history.Count > 1)
+                    {
+                        <MudChart ChartType="ChartType.Line"
+                                  ChartSeries="@_chartSeries"
+                                  ChartLabels="@_chartLabels"
+                                  Width="100%" Height="280px"
+                                  ChartOptions="@_chartOptions" />
                     }
-                </div>
-            </div>
-            @if (_todaySeries.Count > 0)
-            {
-                <MudChart ChartType="ChartType.Line"
-                          ChartSeries="@_todaySeries"
-                          ChartLabels="@_todayLabels"
-                          Width="100%" Height="280px"
-                          ChartOptions="@_chartOptions" />
-            }
-            else
-            {
-                <div class="d-flex justify-center align-center" style="height:280px;">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                    <MudText Class="ml-3 dim-text">Collecting today's data…</MudText>
-                </div>
-            }
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText Class="ml-3 dim-text">Waiting for data…</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Hashrate (GH/s)</MudText>
+                        <div class="d-flex flex-column align-end">
+                            <MudText Typo="Typo.caption" Class="dim-text">
+                                @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by hour
+                            </MudText>
+                            @if (_todayPeak > 0)
+                            {
+                                <MudText Typo="Typo.caption" Style="color: #FFD700;">
+                                    Peak: @($"{_todayPeak:F1} GH/s")
+                                </MudText>
+                            }
+                        </div>
+                    </div>
+                    @if (_todaySeries.Count > 0)
+                    {
+                        <MudChart ChartType="ChartType.Line"
+                                  ChartSeries="@_todaySeries"
+                                  ChartLabels="@_todayLabels"
+                                  Width="100%" Height="280px"
+                                  ChartOptions="@_chartOptions" />
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText Class="ml-3 dim-text">Collecting today's data…</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
 
-@* ===== CURRENT EPOCH TIMELINE + AVG HASHRATE PER EPOCH (side by side) ===== *@
-<MudGrid Class="mb-4">
-    <MudItem xs="12" md="6">
-        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
-            <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                <MudText Typo="Typo.h6" Style="color: #7e6fff;">
-                    Current Epoch @(_latest?.QubicEpoch > 0 ? $"· Epoch {_latest.QubicEpoch}" : "") · Hashrate (GH/s)
-                </MudText>
-                <MudText Typo="Typo.caption" Class="dim-text">
-                    Wed 12:00 UTC → next Wed 12:00 UTC
-                </MudText>
-            </div>
-            @if (_epochTimelineSeries.Count > 0)
-            {
-                <MudChart ChartType="ChartType.Line"
-                          ChartSeries="@_epochTimelineSeries"
-                          ChartLabels="@_epochTimelineLabels"
-                          Width="100%" Height="260px"
-                          ChartOptions="@_chartOptions" />
-            }
-            else
-            {
-                <div class="d-flex justify-center align-center" style="height:260px;">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                    <MudText Class="ml-3 dim-text">Collecting current epoch data…</MudText>
-                </div>
-            }
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="6">
-        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
-            <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Avg Hashrate per Epoch (GH/s)</MudText>
-            <MudText Typo="Typo.caption" Class="mb-3 dim-text">Mean GH/s over all recorded snapshots per epoch</MudText>
-            @if (_epochHashrateSeries.Count > 0)
-            {
-                <MudChart ChartType="ChartType.Bar"
-                          ChartSeries="@_epochHashrateSeries"
-                          ChartLabels="@_epochLabels"
-                          Width="100%" Height="260px"
-                          ChartOptions="@_epochChartOptions" />
-            }
-            else
-            {
-                <div class="d-flex justify-center align-center" style="height:260px;">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                </div>
-            }
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+        @* ===== CURRENT EPOCH TIMELINE + AVG HASHRATE PER EPOCH (side by side) ===== *@
+        <MudGrid Class="mb-2">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">
+                            Current Epoch @(_latest?.QubicEpoch > 0 ? $"· Epoch {_latest.QubicEpoch}" : "") · Hashrate (GH/s)
+                        </MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text">
+                            Wed 12:00 UTC → next Wed 12:00 UTC
+                        </MudText>
+                    </div>
+                    @if (_epochTimelineSeries.Count > 0)
+                    {
+                        <MudChart ChartType="ChartType.Line"
+                                  ChartSeries="@_epochTimelineSeries"
+                                  ChartLabels="@_epochTimelineLabels"
+                                  Width="100%" Height="260px"
+                                  ChartOptions="@_chartOptions" />
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText Class="ml-3 dim-text">Collecting current epoch data…</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Avg Hashrate per Epoch (GH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Mean GH/s over all recorded snapshots per epoch</MudText>
+                    @if (_epochHashrateSeries.Count > 0)
+                    {
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@_epochHashrateSeries"
+                                  ChartLabels="@_epochLabels"
+                                  Width="100%" Height="260px"
+                                  ChartOptions="@_epochChartOptions" />
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
 
-@* ===== SOLUTIONS + POOL SHARES PER EPOCH ===== *@
-<MudGrid Class="mb-4">
-    <MudItem xs="12" md="6">
-        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
-            <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Solutions per Epoch</MudText>
-            <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted, rejected and stale solutions per epoch</MudText>
-            @if (_epochSolutionsDetailSeries.Count > 0)
+        @* ===== SOLUTIONS + POOL SHARES PER EPOCH ===== *@
+        <MudGrid Class="mb-2">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Solutions per Epoch</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted, rejected and stale solutions per epoch</MudText>
+                    @if (_epochSolutionsDetailSeries.Count > 0)
+                    {
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@_epochSolutionsDetailSeries"
+                                  ChartLabels="@_epochLabels"
+                                  Width="100%" Height="260px"
+                                  ChartOptions="@_epochChartOptions" />
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Pool Shares per Epoch</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted vs. rejected pool shares per epoch</MudText>
+                    @if (_epochPoolSeries.Count > 0)
+                    {
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@_epochPoolSeries"
+                                  ChartLabels="@_epochLabels"
+                                  Width="100%" Height="260px"
+                                  ChartOptions="@_epochChartOptions" />
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+    </MudTabPanel>
+    <MudTabPanel Text="Pool" Icon="@Icons.Material.Filled.Waves">
+
+        <MudText Typo="Typo.caption" Class="mb-3 dim-text">
+            @if (_poolStats?.LastShareTime.HasValue == true)
             {
-                <MudChart ChartType="ChartType.Bar"
-                          ChartSeries="@_epochSolutionsDetailSeries"
-                          ChartLabels="@_epochLabels"
-                          Width="100%" Height="260px"
-                          ChartOptions="@_epochChartOptions" />
+                @($"Last share: {_poolStats.LastShareTime.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}")
             }
             else
             {
-                <div class="d-flex justify-center align-center" style="height:260px;">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
-                </div>
+                @("Last share: –")
             }
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="6">
-        <MudPaper Class="glass-card pa-4" Elevation="0" Style="height:100%;">
-            <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Pool Shares per Epoch</MudText>
-            <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted vs. rejected pool shares per epoch</MudText>
-            @if (_epochPoolSeries.Count > 0)
-            {
-                <MudChart ChartType="ChartType.Bar"
-                          ChartSeries="@_epochPoolSeries"
-                          ChartLabels="@_epochLabels"
-                          Width="100%" Height="260px"
-                          ChartOptions="@_epochChartOptions" />
-            }
-            else
-            {
-                <div class="d-flex justify-center align-center" style="height:260px;">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Secondary" />
-                </div>
-            }
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+        </MudText>
+
+        @* Blocks per Epoch Chart + Recent Blocks table *@
+        <MudGrid Class="mb-2">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Blocks per Epoch</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Found and confirmed blocks per Qubic epoch</MudText>
+                    @if (_epochBlockSeries.Count > 0)
+                    {
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@_epochBlockSeries"
+                                  ChartLabels="@_poolEpochLabels"
+                                  Width="100%" Height="260px"
+                                  ChartOptions="@_poolChartOptions" />
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText Class="ml-3 dim-text">No block data yet…</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-3" Style="color: #7e6fff;">Recent Blocks</MudText>
+                    @if (_recentBlocks.Count > 0)
+                    {
+                        <MudTable Items="@_recentBlocks.Take(10)" Dense="true" Hover="true"
+                                  Style="background: transparent;" Class="pool-blocks-table">
+                            <HeaderContent>
+                                <MudTh Style="color: #7e6fff;">Height</MudTh>
+                                <MudTh Style="color: #7e6fff;">Hash</MudTh>
+                                <MudTh Style="color: #7e6fff;">Time</MudTh>
+                                <MudTh Style="color: #7e6fff;">Status</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
+                                             Style="color: #4EE0FC;">@context.Height</MudLink>
+                                </MudTd>
+                                <MudTd>
+                                    <MudLink Href="@($"https://dogechain.info/block/{context.Hash}")" Target="_blank"
+                                             Style="color: #4EE0FC; font-family: monospace; font-size: 0.75rem;">
+                                        @(context.Hash.Length > 12 ? context.Hash[..8] + "…" + context.Hash[^4..] : context.Hash)
+                                    </MudLink>
+                                </MudTd>
+                                <MudTd Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("MM-dd HH:mm")</MudTd>
+                                <MudTd>
+                                    @if (context.Confirmed)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Confirmed</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Pending</MudChip>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:200px;">
+                            <MudText Class="dim-text">No blocks found yet.</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        @* Full Block History Table *@
+        @if (_recentBlocks.Count > 10)
+        {
+            <MudPaper Class="glass-card pa-4 mb-4" Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-3" Style="color: #7e6fff;">All Blocks (@_recentBlocks.Count total)</MudText>
+                <MudTable Items="@_recentBlocks" Dense="true" Hover="true" Style="background: transparent;"
+                          FixedHeader="true" Height="400px">
+                    <HeaderContent>
+                        <MudTh Style="color: #7e6fff;">Height</MudTh>
+                        <MudTh Style="color: #7e6fff;">Hash</MudTh>
+                        <MudTh Style="color: #7e6fff;">Worker</MudTh>
+                        <MudTh Style="color: #7e6fff;">Epoch</MudTh>
+                        <MudTh Style="color: #7e6fff;">Time</MudTh>
+                        <MudTh Style="color: #7e6fff;">Status</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
+                                     Style="color: #4EE0FC;">@context.Height</MudLink>
+                        </MudTd>
+                        <MudTd>
+                            <MudLink Href="@($"https://dogechain.info/block/{context.Hash}")" Target="_blank"
+                                     Style="color: #4EE0FC; font-family: monospace; font-size: 0.75rem;">
+                                @(context.Hash.Length > 16 ? context.Hash[..12] + "…" + context.Hash[^4..] : context.Hash)
+                            </MudLink>
+                        </MudTd>
+                        <MudTd>
+                            <MudLink Href="@($"https://dogechain.info/address/{context.Worker}")" Target="_blank"
+                                     Style="color: #7e6fff; font-family: monospace; font-size: 0.75rem;">
+                                @(context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
+                            </MudLink>
+                        </MudTd>
+                        <MudTd>Ep @context.QubicEpoch</MudTd>
+                        <MudTd Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd>
+                            @if (context.Confirmed)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success">Confirmed</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">Pending</MudChip>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        }
+
+    </MudTabPanel>
+</MudTabs>
 
 @code {
     [CascadingParameter(Name = "IsDarkMode")] private bool IsDarkMode { get; set; } = true;
@@ -281,9 +443,23 @@ else
 
     private HashrateSnapshot? _latest;
     private HashrateSnapshot? _peakSnapshot;
+    private PoolLiveStats? _poolStats;
     private List<HashrateSnapshot> _history = [];
     private List<HashrateSnapshot> _fullHistory = [];
     private DateTimeOffset _lastRefresh = DateTimeOffset.UtcNow;
+
+    // Pool-specific fields
+    private List<PoolBlock> _recentBlocks = [];
+    private List<ChartSeries<double>> _epochBlockSeries = [];
+    private string[] _poolEpochLabels = [];
+
+    private BarChartOptions _poolChartOptions => new BarChartOptions
+    {
+        YAxisTicks = 5,
+        YAxisFormat = "F0",
+        ChartPalette = IsDarkMode ? new[] { "#7e6fff", "#4caf50", "#f44336", "#4EE0FC", "#FFD700" }
+                                  : new[] { "#3d1fcc", "#1b5e20", "#8b0000", "#006f8a", "#bf3600" },
+    };
 
     // Live 60-min chart
     private List<ChartSeries<double>> _chartSeries = [];
@@ -355,6 +531,9 @@ else
     private async Task RefreshDataAsync()
     {
         _latest = await Api.GetLatestSnapshotAsync();
+        _poolStats = await Api.GetPoolStatsAsync();
+        _recentBlocks = await Api.GetPoolBlocksAsync();
+        BuildPoolEpochChart();
         // 10080 = 7 days × 24h × 60min at 60s poll interval (full epoch)
         _fullHistory = await Api.GetHistoryAsync(10080);
         _fullHistory = _fullHistory.OrderBy(x => x.Timestamp).ToList();
@@ -364,6 +543,34 @@ else
         BuildChartData();
         BuildEpochChartData();
         BuildEpochTimelineData();
+    }
+
+    private void BuildPoolEpochChart()
+    {
+        if (_recentBlocks.Count == 0) return;
+
+        var byEpoch = _recentBlocks
+            .Where(b => b.QubicEpoch > 0)
+            .GroupBy(b => b.QubicEpoch)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        if (byEpoch.Count == 0) return;
+
+        _poolEpochLabels = byEpoch.Select(g => $"Ep {g.Key}").ToArray();
+        _epochBlockSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Found",
+                Data = byEpoch.Select(g => (double)g.Count()).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "Confirmed",
+                Data = byEpoch.Select(g => (double)g.Count(b => b.Confirmed)).ToArray()
+            }
+        ];
     }
 
     private void BuildChartData()
@@ -531,6 +738,13 @@ else
     private string FormatUptime(long seconds)
     {
         var ts = TimeSpan.FromSeconds(seconds);
+        if (ts.TotalDays >= 1) return $"{(int)ts.TotalDays}d {ts.Hours}h {ts.Minutes}m";
+        if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours}h {ts.Minutes}m";
+        return $"{ts.Minutes}m {ts.Seconds}s";
+    }
+
+    private static string FormatUptimeSpan(TimeSpan ts)
+    {
         if (ts.TotalDays >= 1) return $"{(int)ts.TotalDays}d {ts.Hours}h {ts.Minutes}m";
         if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours}h {ts.Minutes}m";
         return $"{ts.Minutes}m {ts.Seconds}s";

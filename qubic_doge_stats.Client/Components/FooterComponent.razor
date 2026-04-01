@@ -3,30 +3,19 @@
 <MudAlert ContentAlignment="HorizontalAlignment.Center"
           Severity="Severity.Warning"
           Variant="Variant.Text"
-          Class="mt-4 mb-4 text-center"
-          Style="padding:4px;">
-    <MudText Typo="Typo.caption"><b>Disclaimer: </b></MudText>
-    <MudText Typo="Typo.caption">This application is currently in <u>beta status</u>.</MudText>
-    <MudText Typo="Typo.caption">
-        All data is retrieved from the public RPC endpoint 
-        <MudLink Color="Color.Tertiary"
-            Href="https://rpc.qubic.org"
-            Target="_blank"
-            Underline="Underline.Hover"
-            Style="font-size: small;">
-            rpc.qubic.org
-        </MudLink>
-        and 
-        <MudLink Color="Color.Tertiary"
-            Href="https://doge-stats.qubic.org"
-            Target="_blank"
-            Underline="Underline.Hover"
-            Style="font-size: small;">
-            https://doge-stats.qubic.org
-        </MudLink>.
-    </MudText>
-    <MudText Typo="Typo.caption">I <u>do not guarantee</u> the <u>completeness, accuracy, or availability</u> of the captured data.</MudText>
-    <MudText Typo="Typo.caption"><strong>Use it for <u>demonstration and analysis purposes only</u>.</strong></MudText>
+          Class="mt-4 mb-4"
+          Style="padding:4px; text-align: center;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px;">
+        <MudText Typo="Typo.caption"><b>Disclaimer:</b></MudText>
+        <MudText Typo="Typo.caption">This application is currently in <u>beta status</u>.</MudText>
+        <MudText Typo="Typo.caption">All data is retrieved from the public RPC endpoint</MudText>
+        <MudLink Color="Color.Tertiary" Href="https://rpc.qubic.org" Target="_blank" Underline="Underline.Hover" Style="font-size: small;">rpc.qubic.org</MudLink>
+        <MudText Typo="Typo.caption">and</MudText>
+        <MudLink Color="Color.Tertiary" Href="https://doge-stats.qubic.org" Target="_blank" Underline="Underline.Hover" Style="font-size: small;">https://doge-stats.qubic.org</MudLink>
+        <MudText Typo="Typo.caption">.</MudText>
+        <MudText Typo="Typo.caption">I <u>do not guarantee</u> the <u>completeness, accuracy, or availability</u> of the captured data.</MudText>
+        <MudText Typo="Typo.caption"><strong>Use it for <u>demonstration and analysis purposes only</u>.</strong></MudText>
+    </div>
 </MudAlert>
 
 <MudPaper Class="mt-5 pa-1 mb-2 pt-3" Elevation="0" Square="true">

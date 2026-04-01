@@ -570,6 +570,7 @@ else
             await RefreshDataAsync();
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+
     }
 
     private async Task RefreshDataAsync()

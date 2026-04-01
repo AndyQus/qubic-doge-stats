@@ -32,4 +32,10 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<List<PoolBlock>>("/api/pool/blocks") ?? []; }
         catch { return []; }
     }
+
+    public async Task<DogeNetworkStats?> GetNetworkStatsAsync()
+    {
+        try { return await _http.GetFromJsonAsync<DogeNetworkStats>("/api/network/stats"); }
+        catch { return null; }
+    }
 }

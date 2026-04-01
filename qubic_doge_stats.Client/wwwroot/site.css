@@ -24,7 +24,29 @@
     opacity: 0.4;
 }
 
-/* Chart axis labels - dark mode */
+/* ===== Chart Tooltips: weißer Hintergrund, dunkle Umrandung, dunkle Schrift (theme-unabhängig) ===== */
+/* MudBlazor v9 rendert Tooltips mit Klasse .svg-tooltip */
+.svg-tooltip rect {
+    fill: #ffffff !important;
+    stroke: #1a1a2e !important;
+    stroke-width: 1.5 !important;
+}
+
+.svg-tooltip text {
+    fill: #1a1a2e !important;
+    font-size: 13px !important;
+    stroke: none !important;   /* black outline-stroke entfernen (war für hellen Text auf dunklem Grund) */
+    filter: none !important;   /* drop-shadow-filter entfernen (war für hellen Text auf dunklem Grund) */
+}
+
+/* Dreieck-Zeiger passend einfärben */
+.svg-tooltip polygon {
+    fill: #ffffff !important;
+    stroke: #1a1a2e !important;
+    stroke-width: 1px !important;
+}
+
+/* ===== Chart axis labels - dark mode ===== */
 .theme-dark .mud-chart text {
     fill: rgba(255, 255, 255, 0.55);
     font-size: 0.7rem;

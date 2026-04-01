@@ -40,6 +40,15 @@ builder.Services.AddHttpClient<PoolStatsClient>(client =>
 
 builder.Services.AddHostedService<PoolPollingWorker>();
 
+// Dogecoin Explorer HTTP client (blockchair.com)
+builder.Services.AddHttpClient<DogeExplorerClient>(client =>
+{
+    client.BaseAddress = new Uri("https://api.blockchair.com/dogecoin/stats");
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+
+builder.Services.AddHostedService<DogeExplorerPollingWorker>();
+
 // CORS
 builder.Services.AddCors(options =>
 {

@@ -4,6 +4,13 @@
         <MudText Class="stat-card-label" Style="font-size: 0.75rem; font-weight: 500; letter-spacing: 0.5px;">
             @Title.ToUpper()
         </MudText>
+        @if (!string.IsNullOrEmpty(Tooltip))
+        {
+            <MudTooltip Text="@Tooltip" Placement="Placement.Top" Arrow="true">
+                <MudIcon Icon="@Icons.Material.Outlined.Info"
+                         Style="font-size: 0.95rem; color: rgba(255,255,255,0.3); cursor: help; margin-left: auto;" />
+            </MudTooltip>
+        }
     </div>
     <MudText Typo="Typo.h5" Style="@($"color: {Color}; font-weight: 700;")">@Value</MudText>
 </MudPaper>
@@ -13,4 +20,5 @@
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string Value { get; set; } = "";
     [Parameter] public string Color { get; set; } = "#7e6fff";
+    [Parameter] public string Tooltip { get; set; } = "";
 }

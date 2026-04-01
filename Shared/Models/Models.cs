@@ -154,3 +154,10 @@ public class PoolJsonBlock
     public DateTimeOffset Time { get; set; }
     public bool Confirmed { get; set; }
 }
+
+// DOGE network stats from Dogecoin explorer (blockchair.com)
+public class DogeNetworkStats
+{
+    public long NetworkHashrate { get; set; }  // H/s (24h average)
+    public DateTimeOffset FetchedAt { get; set; }
+}

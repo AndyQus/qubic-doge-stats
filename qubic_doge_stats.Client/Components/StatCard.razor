@@ -13,13 +13,48 @@
             </MudTooltip>
         }
     </div>
-    <MudText Typo="Typo.h5" Style="@($"color: {Color}; font-weight: 700;")">@Value</MudText>
+
+    @* Primary value (Live) *@
+    <div class="d-flex align-baseline gap-2 flex-wrap">
+        <MudText Typo="Typo.h5" Style="@($"color: {Color}; font-weight: 700;")">@Value</MudText>
+        @if (!string.IsNullOrEmpty(ValueLabel))
+        {
+            <MudText Typo="Typo.caption" Class="dim-text">@ValueLabel</MudText>
+        }
+    </div>
+
+    @* Secondary value (Epoch) *@
+    @if (!string.IsNullOrEmpty(SecondaryValue))
+    {
+        <div class="d-flex align-center gap-1 mt-1 flex-wrap">
+            <MudText Typo="Typo.caption" Class="dim-text" Style="min-width: 3rem;">@(SecondaryLabel ?? "Epoch")</MudText>
+            <MudText Typo="Typo.body2" Style="@($"color: {Color}; opacity: 0.8; font-weight: 600;")">@SecondaryValue</MudText>
+        </div>
+    }
+
+    @* Tertiary value (All-Time) *@
+    @if (!string.IsNullOrEmpty(TertiaryValue))
+    {
+        <div class="d-flex align-center gap-1 mt-1 flex-wrap">
+            <MudText Typo="Typo.caption" Class="dim-text" Style="min-width: 3rem;">@(TertiaryLabel ?? "All-Time")</MudText>
+            <MudText Typo="Typo.body2" Style="@($"color: {Color}; opacity: 0.65; font-weight: 600;")">@TertiaryValue</MudText>
+        </div>
+    }
 </MudPaper>
 
 @code {
     [Parameter] public string Icon { get; set; } = "";
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string ValueLabel { get; set; } = "";
     [Parameter] public string Color { get; set; } = "#7e6fff";
     [Parameter] public string Tooltip { get; set; } = "";
+
+    // Optional second row (epoch)
+    [Parameter] public string SecondaryValue { get; set; } = "";
+    [Parameter] public string? SecondaryLabel { get; set; }
+
+    // Optional third row (all-time)
+    [Parameter] public string TertiaryValue { get; set; } = "";
+    [Parameter] public string? TertiaryLabel { get; set; }
 }

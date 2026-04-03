@@ -44,4 +44,16 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<DogePriceStats>("/api/doge/price"); }
         catch { return null; }
     }
+
+    public async Task<EpochSummary?> GetLatestEpochSummaryAsync()
+    {
+        try { return await _http.GetFromJsonAsync<EpochSummary>("/api/epochs/latest"); }
+        catch { return null; }
+    }
+
+    public async Task<AllTimeStats?> GetAllTimeStatsAsync()
+    {
+        try { return await _http.GetFromJsonAsync<AllTimeStats>("/api/stats/alltime"); }
+        catch { return null; }
+    }
 }

@@ -3,8 +3,8 @@
 <MudAlert ContentAlignment="HorizontalAlignment.Center"
           Severity="Severity.Warning"
           Variant="Variant.Text"
-          Class="mt-4 mb-4"
-          Style="padding:4px; text-align: center;">
+          Class="mt-2 mb-2"
+          Style="padding:4px; text-align: center;padding-right:40px">
     <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px;">
         <MudText Typo="Typo.caption"><b>Disclaimer:</b></MudText>
         <MudText Typo="Typo.caption">This application is currently in <u>beta status</u>.</MudText>
@@ -19,44 +19,42 @@
 </MudAlert>
 
 <MudPaper Class="mt-5 pa-1 mb-2 pt-3" Elevation="0" Square="true">
-    <MudContainer MaxWidth="MaxWidth.False">
-        <MudGrid Class="align-items-center" Justify="Justify.SpaceBetween">
+    <MudGrid Class="align-items-center" Justify="Justify.SpaceBetween">
 
-            <MudItem xs="12" md="4" Class="d-flex align-center justify-center justify-md-start">
-                <MudImage Src="logos/Logo_dark.webp" Height="25" Width="25" />
-                <MudText Typo="Typo.caption">
-                    &nbsp;&copy; @DateTime.Now.Year Qubic - Sponsored by AndyQus
-                </MudText>
-            </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-center justify-center justify-md-start">
+            <MudImage Src="logos/Logo_dark.webp" Height="25" Width="25" />
+            <MudText Typo="Typo.caption">
+                &nbsp;&copy; @DateTime.Now.Year Qubic - Sponsored by AndyQus
+            </MudText>
+        </MudItem>
 
-            <MudItem xs="12" md="4" Class="d-flex flex-wrap justify-center gap-2">
-                @for (int i = 0; i < LinkItems.Count; i++)
+        <MudItem xs="12" md="4" Class="d-flex flex-wrap justify-center gap-2">
+            @for (int i = 0; i < LinkItems.Count; i++)
+            {
+                var item = LinkItems[i];
+                <MudLink Color="Color.Tertiary"
+                         Href="@item.To"
+                         Target="@(item.IsInternal ? "_self" : "_blank")"
+                         rel="@(item.IsInternal ? null : "noreferrer")"
+                         Underline="Underline.Hover"
+                         Style="font-size: small;">
+                    @item.Label
+                </MudLink>
+
+                @if (i < LinkItems.Count - 1)
                 {
-                    var item = LinkItems[i];
-                    <MudLink Color="Color.Tertiary"
-                             Href="@item.To"
-                             Target="@(item.IsInternal ? "_self" : "_blank")"
-                             rel="@(item.IsInternal ? null : "noreferrer")"
-                             Underline="Underline.Hover"
-                             Style="font-size: small;">
-                        @item.Label
-                    </MudLink>
-
-                    @if (i < LinkItems.Count - 1)
-                    {
-                        <MudText Typo="Typo.caption">&#x2022;</MudText>
-                    }
+                    <MudText Typo="Typo.caption">&#x2022;</MudText>
                 }
-            </MudItem>
+            }
+        </MudItem>
 
-            <MudItem xs="12" md="4" Class="d-flex justify-center justify-md-end">
-                <MudText Typo="Typo.caption">
-                    v.@_version (BETA)
-                </MudText>
-            </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex justify-center justify-md-end">
+            <MudText Typo="Typo.caption">
+                v.@_version (BETA)
+            </MudText>
+        </MudItem>
 
-        </MudGrid>
-    </MudContainer>
+    </MudGrid>
 </MudPaper>
 
 

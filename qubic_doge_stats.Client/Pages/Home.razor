@@ -9,148 +9,227 @@
 @if (_latest is not null)
 {
     <MudGrid Class="mb-4 stats-grid" Spacing="3">
-        <MudItem xs="12" sm="6">
+
+        @* ── Zeile 1: Mining-Leistung + DOGE Blöcke ── *@
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.Speed"
                       Title="Hashrate"
-                      Value="@FormatHashrateDisplay(_latest.Hashrate, _latest.HashrateDisplay)"
+                      Value="@FormatHashrateDisplay(_latest.Hashrate)"
+                      SecondaryValue="@(_latestEpochSummary is not null ? $"{_latestEpochSummary.PeakHashrateDisplay}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_allTimeStats is not null && _allTimeStats.PeakHashrate > 0 ? $"{_allTimeStats.PeakHashrateDisplay} · E{_allTimeStats.PeakHashrateEpoch}" : "–")"
+                      TertiaryLabel="ATH"
                       Color="#7e6fff"
-                      Tooltip="Current mining hashrate of the pool – the combined number of hashes per second computed by all connected miners." />
+                      Tooltip="Current pool hashrate. Ep Avg: average over the last completed epoch. ATH: highest hashrate ever recorded." />
         </MudItem>
-        <MudItem xs="12" sm="6">
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.Language"
                       Title="Pool Share of Network"
                       Value="@(_networkStats is not null && _networkStats.NetworkHashrate > 0
                           ? $"{(_latest.Hashrate / (double)_networkStats.NetworkHashrate * 100):F3} %"
                           : "–")"
-                      Color="#4EE0FC"
-                      Tooltip="The pool's share of the total Dogecoin network hashrate (24h average). The higher the percentage, the greater the chance of finding blocks." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.TrendingUp"
-                      Title="All-Time Peak Hashrate"
-                      Value="@($"{(_peakSnapshot is not null ? FormatHashrateDisplay(_peakSnapshot.Hashrate, _peakSnapshot.HashrateDisplay) : "–")}{(_peakSnapshot?.QubicEpoch > 0 ? $" · E{_peakSnapshot!.QubicEpoch}" : "")}")"
-                      Color="#FFD700"
-                      Tooltip="Highest hashrate ever recorded by the pool, including the epoch in which it was reached." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.CheckCircle"
-                      Title="Pool Accepted"
-                      Value="@_latest.PoolAccepted.ToString("N0")"
-                      Color="#4caf50"
-                      Tooltip="Number of shares accepted by the pool. A share is a valid partial solution submitted by a miner, proving work is being done." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.Error"
-                      Title="Pool Rejected"
-                      Value="@_latest.PoolRejected.ToString("N0")"
-                      Color="#f44336"
-                      Tooltip="Number of shares rejected by the pool – e.g. due to stale work, incorrect difficulty, or connectivity issues." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.Hub"
-                      Title="Connected Peers"
-                      Value="@($"{_latest.ConnectedPeers} / {_latest.TotalPeers}")"
-                      Color="#4EE0FC"
-                      Tooltip="Currently connected peers vs. known peers in the Qubic network. Reflects the dispatcher's network connectivity." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.TaskAlt"
-                      Title="Solutions Accepted"
-                      Value="@_latest.SolutionsAccepted.ToString("N0")"
-                      Color="#4caf50"
-                      Tooltip="Number of solutions accepted by the Qubic network. Each accepted solution proves computational work contributed to Qubic AI training." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.ContentPaste"
-                      Title="Solutions Stale"
-                      Value="@_latest.SolutionsStale.ToString("N0")"
-                      Color="#ff9800"
-                      Tooltip="Solutions submitted too late – the corresponding Qubic tick had already expired. No penalty, but the compute time was wasted." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.Assignment"
-                      Title="Tasks Distributed"
-                      Value="@_latest.TasksDistributed.ToString("N0")"
+                      SecondaryValue="@(_latestEpochSummary is not null && _latestEpochSummary.PeakNetworkSharePct > 0 ? $"{_latestEpochSummary.PeakNetworkSharePct:F3} %" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_allTimeStats is not null && _allTimeStats.PeakNetworkSharePct > 0 ? $"{_allTimeStats.PeakNetworkSharePct:F3} % · E{_allTimeStats.PeakNetworkShareEpoch}" : "–")"
+                      TertiaryLabel="ATH"
                       Color="#7e6fff"
-                      Tooltip="Number of compute tasks distributed by the dispatcher to miners. Each task contains a Qubic AI training workload." />
+                      Tooltip="Pool's share of the total Dogecoin network hashrate (24h avg). Ep Peak: highest in last completed epoch. ATH: highest ever recorded." />
         </MudItem>
-        <MudItem xs="12" sm="6">
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Icon="@Icons.Material.Filled.Stars"
+                      Title="DOGE Blocks Found"
+                      Value="@(_poolStats?.BlocksFound.ToString("N0") ?? "–")"
+                      SecondaryValue="@(_peakBlocksFound > 0 ? $"{_peakBlocksFound:N0} · E{_peakBlocksFoundEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : _recentBlocks.Count.ToString("N0"))"
+                      TertiaryLabel="Total"
+                      Color="#FFD700"
+                      Tooltip="Dogecoin blocks found. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Icon="@Icons.Material.Filled.Verified"
+                      Title="DOGE Blocks Confirmed"
+                      Value="@(_poolStats?.BlocksConfirmed.ToString("N0") ?? "–")"
+                      SecondaryValue="@(_peakBlocksConfirmed > 0 ? $"{_peakBlocksConfirmed:N0} · E{_peakBlocksConfirmedEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")"
+                      TertiaryLabel="Total"
+                      Color="#4caf50"
+                      Tooltip="Confirmed DOGE blocks. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time." />
+        </MudItem>
+
+        @* ── Zeile 2: Systeminformationen ── *@
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.LayersClear"
                       Title="Current Epoch"
                       Value="@(_latest.QubicEpoch > 0 ? _latest.QubicEpoch.ToString() : "–")"
                       Color="#4EE0FC"
                       Tooltip="Current Qubic epoch. Each epoch lasts one week (Wed 12:00 UTC to Wed 12:00 UTC). The epoch number increments weekly." />
         </MudItem>
-        <MudItem xs="12" sm="6">
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.Timer"
                       Title="Uptime"
                       Value="@FormatUptime(_latest.UptimeSeconds)"
                       Color="#4EE0FC"
                       Tooltip="Time since the last dispatcher restart. A high value indicates stable, uninterrupted operation." />
         </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.Stars"
-                      Title="DOGE Blocks Found"
-                      Value="@(_poolStats?.BlocksFound.ToString("N0") ?? "–")"
-                      Color="#FFD700"
-                      Tooltip="Number of Dogecoin blocks found in the current pool session. Each found block earns the pool a block reward in DOGE." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.Verified"
-                      Title="DOGE Blocks Confirmed"
-                      Value="@(_poolStats?.BlocksConfirmed.ToString("N0") ?? "–")"
-                      Color="#4caf50"
-                      Tooltip="Blocks that have been finalized by the Dogecoin network. Only confirmed blocks guarantee that the block reward has been paid out." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.CheckCircle"
-                      Title="Pool Shares Valid"
-                      Value="@(_poolStats?.SharesValid.ToString("N0") ?? "–")"
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Icon="@Icons.Material.Filled.Hub"
+                      Title="Connected Peers"
+                      Value="@($"{_latest.ConnectedPeers} / {_latest.TotalPeers}")"
                       Color="#4EE0FC"
-                      Tooltip="Valid shares submitted in the current pool session (from pool.json). Forms the basis for calculating each miner's reward payout." />
+                      Tooltip="Currently connected peers vs. known peers in the Qubic network. Reflects the dispatcher's network connectivity." />
         </MudItem>
-        <MudItem xs="12" sm="6">
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.Timer"
                       Title="Pool Session Uptime"
                       Value="@(_poolStats is not null ? FormatUptimeSpan(DateTimeOffset.UtcNow - _poolStats.SessionStart) : "–")"
-                      Color="#7e6fff"
+                      Color="#4EE0FC"
                       Tooltip="Duration of the current pool session since the last pool server restart. Shares and blocks are counted per session." />
         </MudItem>
-        <MudItem xs="12" sm="6" md="4">
+
+        @* ── Zeile 3: Arbeitsdaten (Qubic + Pool Shares) ── *@
+        <MudItem xs="12" sm="6" md="2">
+            <StatCard Icon="@Icons.Material.Filled.Assignment"
+                      Title="Tasks Distributed"
+                      Value="@_latest.TasksDistributed.ToString("N0")"
+                      SecondaryValue="@(_peakTasksDistributed > 0 ? $"{_peakTasksDistributed:N0} · E{_peakTasksDistributedEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalTasksDistributed > 0 ? _totalTasksDistributed.ToString("N0") : "–")"
+                      TertiaryLabel="Total"
+                      Color="#4EE0FC"
+                      Tooltip="Compute tasks distributed to miners. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <StatCard Icon="@Icons.Material.Filled.TaskAlt"
+                      Title="Solutions Accepted"
+                      Value="@_latest.SolutionsAccepted.ToString("N0")"
+                      SecondaryValue="@(_peakSolutionsAccepted > 0 ? $"{_peakSolutionsAccepted:N0} · E{_peakSolutionsAcceptedEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalSolutionsAccepted > 0 ? _totalSolutionsAccepted.ToString("N0") : "–")"
+                      TertiaryLabel="Total"
+                      Color="#4caf50"
+                      Tooltip="Solutions accepted by the Qubic network. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <StatCard Icon="@Icons.Material.Filled.ContentPaste"
+                      Title="Solutions Stale"
+                      Value="@_latest.SolutionsStale.ToString("N0")"
+                      SecondaryValue="@(_peakSolutionsStale > 0 ? $"{_peakSolutionsStale:N0} · E{_peakSolutionsStaleEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalSolutionsStale > 0 ? _totalSolutionsStale.ToString("N0") : "–")"
+                      TertiaryLabel="Total"
+                      Color="#ff9800"
+                      Tooltip="Stale solutions — submitted after the tick expired. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <StatCard Icon="@Icons.Material.Filled.CheckCircle"
+                      Title="Pool Accepted"
+                      Value="@_latest.PoolAccepted.ToString("N0")"
+                      SecondaryValue="@(_peakPoolAccepted > 0 ? $"{_peakPoolAccepted:N0} · E{_peakPoolAcceptedEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalPoolAccepted > 0 ? _totalPoolAccepted.ToString("N0") : "–")"
+                      TertiaryLabel="Total"
+                      Color="#4caf50"
+                      Tooltip="Shares accepted by the pool. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <StatCard Icon="@Icons.Material.Filled.Error"
+                      Title="Pool Rejected"
+                      Value="@_latest.PoolRejected.ToString("N0")"
+                      SecondaryValue="@(_peakPoolRejected > 0 ? $"{_peakPoolRejected:N0} · E{_peakPoolRejectedEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalPoolRejected > 0 ? _totalPoolRejected.ToString("N0") : "–")"
+                      TertiaryLabel="Total"
+                      Color="#f44336"
+                      Tooltip="Shares rejected by the pool. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <StatCard Icon="@Icons.Material.Filled.CheckCircle"
+                      Title="Pool Shares Valid"
+                      Value="@(_poolStats?.SharesValid.ToString("N0") ?? "–")"
+                      SecondaryValue="@(_peakSharesValid > 0 ? $"{_peakSharesValid:N0} · E{_peakSharesValidEpoch}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_totalSharesValid > 0 ? _totalSharesValid.ToString("N0") : "–")"
+                      TertiaryLabel="Total"
+                      Color="#4caf50"
+                      Tooltip="Valid shares. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
+        </MudItem>
+
+        @* ── Zeile 4: Finanzen ── *@
+        
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Icon="@Icons.Material.Filled.Toll"
+                      Title="Block Reward"
+                      Value="10,000 DOGE"
+                      Color="#FFD700"
+                      Tooltip="Fixed Dogecoin block reward per mined block. Unlike Bitcoin, DOGE completed all scheduled halvings in 2015 — the reward is permanently fixed at 10,000 DOGE." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.AttachMoney"
                       Title="DOGE Price (USD)"
                       Value="@(_dogePrice is not null ? $"${_dogePrice.UsdPrice:F4}" : "–")"
                       Color="#FFD700"
                       Tooltip="Current DOGE price in US Dollar (updated every 5 minutes via CoinGecko)." />
         </MudItem>
-        <MudItem xs="12" sm="6" md="4">
-            <StatCard Icon="@Icons.Material.Filled.Toll"
-                      Title="Block Reward"
-                      Value="10,000 DOGE"
-                      Color="#4EE0FC"
-                      Tooltip="Fixed Dogecoin block reward per mined block. Unlike Bitcoin, DOGE completed all scheduled halvings in 2015 — the reward is permanently fixed at 10,000 DOGE." />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="4">
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.MonetizationOn"
                       Title="Block Reward (USD)"
                       Value="@(_dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")"
-                      Color="#4caf50"
+                      Color="#FFD700"
                       Tooltip="Current USD value of one Dogecoin block reward (10,000 DOGE × current price)." />
         </MudItem>
-         <MudItem xs="12" sm="6">
-            <StatCard Icon="@Icons.Material.Filled.EmojiEvents"
-                      Title="All-Time Blocks Found"
-                      Value="@_recentBlocks.Count.ToString("N0")"
-                      Color="#FFD700"
-                      Tooltip="Total number of Dogecoin blocks ever found by this pool since it launched. Each block is permanently stored in the database." />
-        </MudItem>
-        <MudItem xs="12" sm="6">
+        <MudItem xs="12" sm="6" md="3">
+            @{
+                var totalBlocks = _totalBlocksFound > 0 ? _totalBlocksFound : _recentBlocks.Count;
+                var historicalUsd = _recentBlocks.Where(b => b.DogePriceUsdAtFind > 0).Sum(b => b.DogePriceUsdAtFind * DogeBlockReward);
+                var currentUsd = _dogePrice is not null ? totalBlocks * DogeBlockReward * _dogePrice.UsdPrice : 0m;
+            }
             <StatCard Icon="@Icons.Material.Filled.Savings"
-                      Title="Total Block Qubic Reward"
-                      Value="@($"{_recentBlocks.Count * DogeBlockReward:N0} DOGE{(_dogePrice is not null ? $" · ${_recentBlocks.Count * DogeBlockReward * _dogePrice.UsdPrice:N2}" : "")}")"
+                      Title="Total Block Reward"
+                      Value="@($"{totalBlocks * DogeBlockReward:N0} DOGE")"
+                      SecondaryValue="@(historicalUsd > 0 ? $"${historicalUsd:N2}" : "–")"
+                      SecondaryLabel="Hist. USD"
+                      TertiaryValue="@(_dogePrice is not null ? $"${currentUsd:N2}" : "–")"
+                      TertiaryLabel="Now USD"
                       Color="#4caf50"
-                      Tooltip="Total DOGE earned by the pool from all blocks ever found — calculated as total blocks × 10,000 DOGE. USD value is based on the current DOGE price." />
-        </MudItem>       
+                      Tooltip="Total DOGE from all blocks (blocks × 10,000). Hist. USD: sum of USD value at the moment each block was found. Now USD: same DOGE at current price." />
+        </MudItem>
+
+        @* ── Farblegende (auskommentiert) ──
+        <MudItem xs="12">
+            <MudPaper Class="glass-card pa-3" Elevation="0">
+                <MudText Typo="Typo.caption" Class="mb-2 dim-text" Style="font-weight:600; letter-spacing:0.05em; text-transform:uppercase;">Panel Color Legend</MudText>
+                <div style="display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#7e6fff; flex-shrink:0;"></div>
+                        <MudText Typo="Typo.caption"><b style="color:#7e6fff;">Purple</b> — Mining performance (Hashrate, Pool Share)</MudText>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#4EE0FC; flex-shrink:0;"></div>
+                        <MudText Typo="Typo.caption"><b style="color:#4EE0FC;">Cyan</b> — System status &amp; neutral metrics (Epoch, Uptime, Peers, Tasks)</MudText>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#FFD700; flex-shrink:0;"></div>
+                        <MudText Typo="Typo.caption"><b style="color:#FFD700;">Gold</b> — DOGE &amp; financial values (Blocks Found, Price, Reward)</MudText>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#4caf50; flex-shrink:0;"></div>
+                        <MudText Typo="Typo.caption"><b style="color:#4caf50;">Green</b> — Positive &amp; confirmed (Blocks Confirmed, Accepted, Valid, Total Reward)</MudText>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#f44336; flex-shrink:0;"></div>
+                        <MudText Typo="Typo.caption"><b style="color:#f44336;">Red</b> — Rejected / negative (Pool Rejected)</MudText>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#ff9800; flex-shrink:0;"></div>
+                        <MudText Typo="Typo.caption"><b style="color:#ff9800;">Orange</b> — Warning / stale (Solutions Stale)</MudText>
+                    </div>
+                </div>
+            </MudPaper>
+        </MudItem>
+        *@
+
     </MudGrid>
 }
 else
@@ -162,7 +241,7 @@ else
 }
 
 @* ===== TABS ===== *@
-<MudTabs Elevation="0" TabHeaderClass="d-inline-flex mb-4">
+<MudTabs Elevation="0" TabHeaderClass="mb-4">
     <MudTabPanel Text="Hashrate" Icon="@Icons.Material.Filled.Speed">
 
         <MudText Typo="Typo.caption" Class="mb-3 dim-text">Last updated: @_lastRefresh.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudText>
@@ -172,7 +251,7 @@ else
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
                     <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live Hashrate (GH/s)</MudText>
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live Hashrate (TH/s)</MudText>
                         <MudText Typo="Typo.caption" Class="dim-text">
                             Last update: @_lastRefresh.ToLocalTime().ToString("HH:mm:ss") · auto 60 s
                         </MudText>
@@ -197,7 +276,7 @@ else
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
                     <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Avg Hashrate (GH/s)</MudText>
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Avg Hashrate (TH/s)</MudText>
                         <div class="d-flex flex-column align-end">
                             <MudText Typo="Typo.caption" Class="dim-text">
                                 @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by hour
@@ -205,7 +284,7 @@ else
                             @if (_todayPeak > 0)
                             {
                                 <MudText Typo="Typo.caption" Style="color: #FFD700;">
-                                    Peak: @($"{_todayPeak:F1} GH/s")
+                                    Peak: @($"{_todayPeak:F2} TH/s")
                                 </MudText>
                             }
                         </div>
@@ -234,7 +313,7 @@ else
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
                     <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">
-                        Current Epoch @(_latest?.QubicEpoch > 0 ? $"· Epoch {_latest.QubicEpoch}" : "") · Avg Hashrate (GH/s)
+                        Current Epoch @(_latest?.QubicEpoch > 0 ? $"· Epoch {_latest.QubicEpoch}" : "") · Avg Hashrate (TH/s)
                     </MudText>
                     <MudText Typo="Typo.caption" Class="mb-3 dim-text">
                         Wed 12:00 UTC → next Wed 12:00 UTC
@@ -258,15 +337,15 @@ else
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
-                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Avg Hashrate per Epoch (GH/s)</MudText>
-                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Mean GH/s over all recorded snapshots per epoch</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Avg Hashrate per Epoch (TH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Mean TH/s over all recorded snapshots per epoch</MudText>
                     @if (_epochHashrateSeries.Count > 0)
                     {
                         <MudChart ChartType="ChartType.Bar"
                                   ChartSeries="@_epochHashrateSeries"
                                   ChartLabels="@_epochLabels"
                                   Width="100%" Height="260px"
-                                  ChartOptions="@_epochChartOptions" />
+                                  ChartOptions="@_epochHashrateChartOptions" />
                     }
                     else
                     {
@@ -290,7 +369,7 @@ else
                                   ChartSeries="@_epochSolutionsDetailSeries"
                                   ChartLabels="@_epochLabels"
                                   Width="100%" Height="260px"
-                                  ChartOptions="@_epochChartOptions" />
+                                  ChartOptions="@_epochCounterChartOptions" />
                     }
                     else
                     {
@@ -310,7 +389,7 @@ else
                                   ChartSeries="@_epochPoolSeries"
                                   ChartLabels="@_epochLabels"
                                   Width="100%" Height="260px"
-                                  ChartOptions="@_epochChartOptions" />
+                                  ChartOptions="@_epochCounterChartOptions" />
                     }
                     else
                     {
@@ -381,12 +460,14 @@ else
                                 </MudTd>
                                 <MudTd>
                                     <span style="font-family: monospace; font-size: 0.75rem; color: #4EE0FC;">
-                                        @(context.Hash.Length > 12 ? context.Hash[..8] + "…" + context.Hash[^4..] : context.Hash)
+                                        @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 12 ? context.Hash[..8] + "…" + context.Hash[^4..] : context.Hash)
                                     </span>
                                 </MudTd>
                                 <MudTd Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("MM-dd HH:mm")</MudTd>
                                 <MudTd Style="color: #4caf50; font-size: 0.8rem;">
-                                    @(_dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
+                                    @(context.DogePriceUsdAtFind > 0
+                                        ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
+                                        : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
                                 </MudTd>
                                 <MudTd>
                                     @{ var conf = _networkStats?.BestBlockHeight > 0 && context.Height > 0
@@ -405,7 +486,7 @@ else
                                     }
                                 </MudTd>
                                 <MudTd>
-                                    <MudLink Href="@($"https://blockchair.com/dogecoin/block/{context.Hash}")" Target="_blank"
+                                    <MudLink Href="@($"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")" Target="_blank"
                                              Style="color: #7e6fff; font-size: 0.75rem;">
                                         <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1rem;" />
                                     </MudLink>
@@ -447,19 +528,21 @@ else
                         </MudTd>
                         <MudTd>
                             <span style="font-family: monospace; font-size: 0.75rem; color: #4EE0FC;">
-                                @(context.Hash.Length > 16 ? context.Hash[..12] + "…" + context.Hash[^4..] : context.Hash)
+                                @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 16 ? context.Hash[..12] + "…" + context.Hash[^4..] : context.Hash)
                             </span>
                         </MudTd>
                         <MudTd>
                             <MudLink Href="@($"https://dogechain.info/address/{context.Worker}")" Target="_blank"
                                      Style="color: #7e6fff; font-family: monospace; font-size: 0.75rem;">
-                                @(context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
+                                @(string.IsNullOrEmpty(context.Worker) ? "–" : context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
                             </MudLink>
                         </MudTd>
                         <MudTd>Ep @context.QubicEpoch</MudTd>
                         <MudTd Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
                         <MudTd Style="color: #4caf50; font-size: 0.8rem;">
-                            @(_dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
+                            @(context.DogePriceUsdAtFind > 0
+                                ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
+                                : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
                         </MudTd>
                         <MudTd>
                             @{ var confFull = _networkStats?.BestBlockHeight > 0 && context.Height > 0
@@ -478,7 +561,7 @@ else
                             }
                         </MudTd>
                         <MudTd>
-                            <MudLink Href="@($"https://blockchair.com/dogecoin/block/{context.Hash}")" Target="_blank"
+                            <MudLink Href="@($"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")" Target="_blank"
                                      Style="color: #7e6fff;">
                                 <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1rem;" />
                             </MudLink>
@@ -502,10 +585,34 @@ else
     private const decimal DogeBlockReward = 10_000m;
 
     private HashrateSnapshot? _latest;
-    private HashrateSnapshot? _peakSnapshot;
     private PoolLiveStats? _poolStats;
+
+    // Effective totals = finalized AllTimeStats + current running epoch (if not yet finalized)
+    private int _totalPoolAccepted;
+    private int _totalPoolRejected;
+    private int _totalSolutionsAccepted;
+    private int _totalSolutionsStale;
+    private int _totalTasksDistributed;
+    private int _totalBlocksFound;
+    private int _totalBlocksConfirmed;
+    private int _totalSharesValid;
+
+    // Epoch peak = highest single-epoch value ever recorded (with epoch number)
+    private int _peakPoolAccepted,      _peakPoolAcceptedEpoch;
+    private int _peakPoolRejected,      _peakPoolRejectedEpoch;
+    private int _peakSolutionsAccepted, _peakSolutionsAcceptedEpoch;
+    private int _peakSolutionsStale,    _peakSolutionsStaleEpoch;
+    private int _peakTasksDistributed,  _peakTasksDistributedEpoch;
+    private int _peakBlocksFound,       _peakBlocksFoundEpoch;
+    private int _peakBlocksConfirmed,   _peakBlocksConfirmedEpoch;
+    private int _peakSharesValid,       _peakSharesValidEpoch;
+
+    private static (int Val, int Epoch) Peak(int atVal, int atEp, int? runVal, int runEp) =>
+        (runVal ?? 0) > atVal ? (runVal!.Value, runEp) : (atVal, atEp);
     private DogeNetworkStats? _networkStats;
     private DogePriceStats? _dogePrice;
+    private EpochSummary? _latestEpochSummary;
+    private AllTimeStats? _allTimeStats;
     private List<HashrateSnapshot> _history = [];
     private List<HashrateSnapshot> _fullHistory = [];
     private DateTimeOffset _lastRefresh = DateTimeOffset.UtcNow;
@@ -532,7 +639,8 @@ else
     private string[] _chartLabels = [];
     private LineChartOptions _chartOptions => new LineChartOptions
     {
-        YAxisTicks = 5,
+        YAxisTicks = 1,
+        MaxNumYAxisTicks = 10,
         YAxisFormat = "F2",
         LineStrokeWidth = 2,
         ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
@@ -548,10 +656,18 @@ else
     private List<ChartSeries<double>> _epochSolutionsDetailSeries = [];
     private List<ChartSeries<double>> _epochPoolSeries = [];
     private string[] _epochLabels = [];
-    private BarChartOptions _epochChartOptions => new BarChartOptions
+    private BarChartOptions _epochHashrateChartOptions => new BarChartOptions
+    {
+        YAxisTicks = 1,
+        MaxNumYAxisTicks = 10,
+        YAxisFormat = "F2",
+        ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
+    };
+
+    private BarChartOptions _epochCounterChartOptions => new BarChartOptions
     {
         YAxisTicks = 5,
-        YAxisFormat = "F2",
+        YAxisFormat = "F0",
         ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
     };
 
@@ -580,14 +696,42 @@ else
         _networkStats = await Api.GetNetworkStatsAsync();
         _dogePrice = await Api.GetDogePriceAsync();
         _recentBlocks = await Api.GetPoolBlocksAsync();
+        _latestEpochSummary = await Api.GetLatestEpochSummaryAsync();
+        _allTimeStats = await Api.GetAllTimeStatsAsync();
+
+        // Running epoch not yet finalized → add its values on top of finalized totals
+        var runningEpoch = _latestEpochSummary is { IsFinalized: false } ? _latestEpochSummary : null;
+        var re = runningEpoch;
+        var at = _allTimeStats;
+
+        // Total = finalized sum + running epoch
+        _totalPoolAccepted       = (at?.TotalPoolAccepted       ?? 0) + (re?.TotalPoolAccepted       ?? 0);
+        _totalPoolRejected       = (at?.TotalPoolRejected       ?? 0) + (re?.TotalPoolRejected       ?? 0);
+        _totalSolutionsAccepted  = (at?.TotalSolutionsAccepted  ?? 0) + (re?.TotalSolutionsAccepted  ?? 0);
+        _totalSolutionsStale     = (at?.TotalSolutionsStale     ?? 0) + (re?.TotalSolutionsStale     ?? 0);
+        _totalTasksDistributed   = (at?.TotalTasksDistributed   ?? 0) + (re?.TotalTasksDistributed   ?? 0);
+        _totalBlocksFound        = (at?.TotalBlocksFound        ?? 0) + (re?.BlocksFound             ?? 0);
+        _totalBlocksConfirmed    = (at?.TotalBlocksConfirmed    ?? 0) + (re?.BlocksConfirmed         ?? 0);
+        _totalSharesValid        = (at?.TotalSharesValid        ?? 0) + (re?.SharesValid             ?? 0);
+
+        // Epoch peak = highest single-epoch value ever; running epoch competes with finalized peaks
+        int reEp = re?.EpochNumber ?? 0;
+        (_peakPoolAccepted,      _peakPoolAcceptedEpoch)      = Peak(at?.PeakPoolAccepted      ?? 0, at?.PeakPoolAcceptedEpoch      ?? 0, re?.TotalPoolAccepted,      reEp);
+        (_peakPoolRejected,      _peakPoolRejectedEpoch)      = Peak(at?.PeakPoolRejected      ?? 0, at?.PeakPoolRejectedEpoch      ?? 0, re?.TotalPoolRejected,      reEp);
+        (_peakSolutionsAccepted, _peakSolutionsAcceptedEpoch) = Peak(at?.PeakSolutionsAccepted ?? 0, at?.PeakSolutionsAcceptedEpoch ?? 0, re?.TotalSolutionsAccepted, reEp);
+        (_peakSolutionsStale,    _peakSolutionsStaleEpoch)    = Peak(at?.PeakSolutionsStale    ?? 0, at?.PeakSolutionsStaleEpoch    ?? 0, re?.TotalSolutionsStale,    reEp);
+        (_peakTasksDistributed,  _peakTasksDistributedEpoch)  = Peak(at?.PeakTasksDistributed  ?? 0, at?.PeakTasksDistributedEpoch  ?? 0, re?.TotalTasksDistributed,  reEp);
+        (_peakBlocksFound,       _peakBlocksFoundEpoch)       = Peak(at?.PeakBlocksFound       ?? 0, at?.PeakBlocksFoundEpoch       ?? 0, re?.BlocksFound,            reEp);
+        (_peakBlocksConfirmed,   _peakBlocksConfirmedEpoch)   = Peak(at?.PeakBlocksConfirmed   ?? 0, at?.PeakBlocksConfirmedEpoch   ?? 0, re?.BlocksConfirmed,        reEp);
+        (_peakSharesValid,       _peakSharesValidEpoch)       = Peak(at?.PeakSharesValid        ?? 0, at?.PeakSharesValidEpoch        ?? 0, re?.SharesValid,            reEp);
+
         NotifyNewBlocks();
         BuildPoolEpochChart();
         // 10080 = 7 days × 24h × 60min at 60s poll interval (full epoch)
         _fullHistory = await Api.GetHistoryAsync(10080);
         _fullHistory = _fullHistory.OrderBy(x => x.Timestamp).ToList();
         _history = _fullHistory.TakeLast(60).ToList();
-        _peakSnapshot = _fullHistory.Count > 0 ? _fullHistory.MaxBy(h => h.Hashrate) : null;
-        _lastRefresh = DateTimeOffset.UtcNow;
+_lastRefresh = DateTimeOffset.UtcNow;
         BuildChartData();
         BuildEpochChartData();
         BuildEpochTimelineData();
@@ -652,21 +796,21 @@ else
         if (_history.Count == 0) return;
 
         // 60-min chart: actual time labels every 10 points to avoid overlap
-        var values = _history.Select(h => ToGigaHashPerSecond(h.Hashrate)).ToArray();
+        var values = _history.Select(h => ToTeraHashPerSecond(h.Hashrate)).ToArray();
         int total = values.Length;
         _chartLabels = _history.Select((h, i) =>
             (i % 10 == 0 && i < total - 5) || i == total - 1
                 ? h.Timestamp.ToLocalTime().ToString("HH:mm")
                 : ""
         ).ToArray();
-        _chartSeries = [new ChartSeries<double> { Name = "GH/s", Data = values, TooltipYValueFormat = "F2" }];
+        _chartSeries = [new ChartSeries<double> { Name = "TH/s", Data = values, TooltipYValueFormat = "F2" }];
 
-        // Today chart: average GH/s per hour bucket (00–23)
+        // Today chart: average TH/s per hour bucket (00–23)
         var todayLocal = DateTimeOffset.UtcNow.ToLocalTime().Date;
         var byHour = _fullHistory
             .Where(h => h.Timestamp.ToLocalTime().Date == todayLocal)
             .GroupBy(h => h.Timestamp.ToLocalTime().Hour)
-            .ToDictionary(g => g.Key, g => g.Average(x => ToGigaHashPerSecond(x.Hashrate)));
+            .ToDictionary(g => g.Key, g => g.Average(x => ToTeraHashPerSecond(x.Hashrate)));
 
         int currentHour = DateTimeOffset.UtcNow.ToLocalTime().Hour;
         _todayLabels = Enumerable.Range(0, currentHour + 1).Select(h => $"{h:D2}").ToArray();
@@ -674,7 +818,7 @@ else
         [
             new ChartSeries<double>
             {
-                Name = "GH/s",
+                Name = "TH/s",
                 Data = Enumerable.Range(0, currentHour + 1)
                     .Select(h => byHour.TryGetValue(h, out var v) ? v : 0.0)
                     .ToArray(),
@@ -683,7 +827,7 @@ else
         ];
 
         var todayAll = _fullHistory.Where(h => h.Timestamp.ToLocalTime().Date == todayLocal).ToList();
-        _todayPeak = todayAll.Count > 0 ? todayAll.Max(h => ToGigaHashPerSecond(h.Hashrate)) : 0;
+        _todayPeak = todayAll.Count > 0 ? todayAll.Max(h => ToTeraHashPerSecond(h.Hashrate)) : 0;
     }
 
     private void BuildEpochChartData()
@@ -698,12 +842,13 @@ else
 
         _epochLabels = epochs.Select(g => $"Ep {g.Key}").ToArray();
 
+        var epochHashData = epochs.Select(g => g.Average(x => ToTeraHashPerSecond(x.Hashrate))).ToArray();
         _epochHashrateSeries =
         [
             new ChartSeries<double>
             {
-                Name = "Avg GH/s",
-                Data = epochs.Select(g => g.Average(x => ToGigaHashPerSecond(x.Hashrate))).ToArray(),
+                Name = "Avg TH/s",
+                Data = epochHashData,
                 TooltipYValueFormat = "F2"
             }
         ];
@@ -713,31 +858,19 @@ else
             new ChartSeries<double>
             {
                 Name = "Accepted",
-                Data = epochs.Select(g =>
-                {
-                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
-                    return (double)Math.Max(0, sorted.Last().SolutionsAccepted - sorted.First().SolutionsAccepted);
-                }).ToArray(),
+                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.SolutionsAccepted)).ToArray(),
                 TooltipYValueFormat = "F0"
             },
             new ChartSeries<double>
             {
                 Name = "Rejected",
-                Data = epochs.Select(g =>
-                {
-                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
-                    return (double)Math.Max(0, sorted.Last().SolutionsRejected - sorted.First().SolutionsRejected);
-                }).ToArray(),
+                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.SolutionsRejected)).ToArray(),
                 TooltipYValueFormat = "F0"
             },
             new ChartSeries<double>
             {
                 Name = "Stale",
-                Data = epochs.Select(g =>
-                {
-                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
-                    return (double)Math.Max(0, sorted.Last().SolutionsStale - sorted.First().SolutionsStale);
-                }).ToArray(),
+                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.SolutionsStale)).ToArray(),
                 TooltipYValueFormat = "F0"
             }
         ];
@@ -747,21 +880,13 @@ else
             new ChartSeries<double>
             {
                 Name = "Accepted",
-                Data = epochs.Select(g =>
-                {
-                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
-                    return (double)Math.Max(0, sorted.Last().PoolAccepted - sorted.First().PoolAccepted);
-                }).ToArray(),
+                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.PoolAccepted)).ToArray(),
                 TooltipYValueFormat = "F0"
             },
             new ChartSeries<double>
             {
                 Name = "Rejected",
-                Data = epochs.Select(g =>
-                {
-                    var sorted = g.OrderBy(x => x.Timestamp).ToList();
-                    return (double)Math.Max(0, sorted.Last().PoolRejected - sorted.First().PoolRejected);
-                }).ToArray(),
+                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.PoolRejected)).ToArray(),
                 TooltipYValueFormat = "F0"
             }
         ];
@@ -800,12 +925,13 @@ else
 
         if (byDay.Count == 0) return;
 
+        var timelineData = byDay.Select(g => g.Average(h => ToTeraHashPerSecond(h.Hashrate))).ToArray();
         _epochTimelineSeries =
         [
             new ChartSeries<double>
             {
-                Name = "Avg GH/s",
-                Data = byDay.Select(g => g.Average(h => ToGigaHashPerSecond(h.Hashrate))).ToArray(),
+                Name = "Avg TH/s",
+                Data = timelineData,
                 TooltipYValueFormat = "F2"
             }
         ];
@@ -824,15 +950,32 @@ else
         return candidate;
     }
 
-    private static double ToGigaHashPerSecond(double hashrate) => hashrate / 1_000_000_000.0;
+    private static double ToTeraHashPerSecond(double hashrate) => hashrate / 1_000_000_000_000.0;
 
-    private static string FormatHashrateDisplay(long hashrate, string apiDisplay)
+    /// <summary>
+    /// Sums only positive increments between consecutive snapshots.
+    /// Handles pool restarts (counter resets) correctly — a reset is treated as a new run from 0.
+    /// </summary>
+    private static int SumPositiveIncrements(IEnumerable<HashrateSnapshot> ordered, Func<HashrateSnapshot, int> selector)
     {
-        if (hashrate >= 1_000_000_000_000L)
-            return $"{hashrate / 1_000_000_000_000.0:F2} TH/s";
-        return string.IsNullOrEmpty(apiDisplay)
-            ? $"{hashrate / 1_000_000_000.0:F1} GH/s"
-            : apiDisplay;
+        var sum = 0;
+        var prev = -1;
+        foreach (var s in ordered)
+        {
+            var val = selector(s);
+            if (prev >= 0 && val > prev)
+                sum += val - prev;
+            prev = val;
+        }
+        return sum;
+    }
+
+    private static string FormatHashrateDisplay(long hashrate, string _ = "")
+    {
+        if (hashrate >= 1_000_000_000_000L) return $"{hashrate / 1_000_000_000_000.0:F2} TH/s";
+        if (hashrate >= 1_000_000_000L)     return $"{hashrate / 1_000_000_000.0:F2} GH/s";
+        if (hashrate >= 1_000_000L)         return $"{hashrate / 1_000_000.0:F2} MH/s";
+        return $"{hashrate} H/s";
     }
 
     private string FormatUptime(long seconds)

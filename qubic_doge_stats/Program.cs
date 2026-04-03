@@ -29,6 +29,7 @@ builder.Services.AddHttpClient<QubicRpcClient>(client =>
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 
+builder.Services.AddScoped<EpochSummaryService>();
 builder.Services.AddHostedService<DogeStatsPollingWorker>();
 
 // Pool stats HTTP client
@@ -57,6 +58,7 @@ builder.Services.AddHttpClient<DogePriceClient>(client =>
 });
 
 builder.Services.AddHostedService<DogePricePollingWorker>();
+builder.Services.AddHostedService<DataBackfillService>();
 
 // CORS
 builder.Services.AddCors(options =>

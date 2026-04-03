@@ -25,6 +25,7 @@ public class HashrateSnapshot
     public int QueueSolutions { get; set; }
     public int QueueStratum { get; set; }
     public int QubicEpoch { get; set; }
+    public long NetworkHashrate { get; set; }  // H/s (24h avg) at snapshot time — for network share calculation
 }
 
 // API response models matching https://doge-stats.qubic.org/dispatcher.json
@@ -100,6 +101,7 @@ public class PoolBlock
     public DateTimeOffset Time { get; set; }
     public bool Confirmed { get; set; }
     public int QubicEpoch { get; set; }
+    public decimal DogePriceUsdAtFind { get; set; }  // DOGE/USD price at the moment this block was first recorded
 }
 
 // Live stats from pool.json (not persisted, just passed through to frontend)
@@ -168,4 +170,92 @@ public class DogePriceStats
 {
     public decimal UsdPrice { get; set; }
     public DateTimeOffset FetchedAt { get; set; }
+}
+
+// Aggregated summary for one completed Qubic epoch — persisted separately so raw snapshots can be deleted later
+public class EpochSummary
+{
+    [BsonId(autoId: true)]
+    public ObjectId Id { get; set; } = ObjectId.NewObjectId();
+    public int EpochNumber { get; set; }
+    public DateTimeOffset EpochStart { get; set; }
+    public DateTimeOffset EpochEnd { get; set; }
+
+    // Hashrate
+    public long AvgHashrate { get; set; }
+    public string AvgHashrateDisplay { get; set; } = "";
+    public long PeakHashrate { get; set; }
+    public string PeakHashrateDisplay { get; set; } = "";
+    public DateTimeOffset PeakHashrateAt { get; set; }
+
+    // Pool share of network (%)
+    public double PeakNetworkSharePct { get; set; }
+    public DateTimeOffset PeakNetworkShareAt { get; set; }
+
+    // Counters (delta over the epoch — current minus baseline at epoch start)
+    public int TotalPoolAccepted { get; set; }
+    public int TotalPoolRejected { get; set; }
+    public int TotalSolutionsAccepted { get; set; }
+    public int TotalSolutionsStale { get; set; }
+    public int TotalTasksDistributed { get; set; }
+
+    // Baseline counter values at epoch start — used to compute live deltas without a full DB scan
+    public int BaselinePoolAccepted { get; set; }
+    public int BaselinePoolRejected { get; set; }
+    public int BaselineSolutionsAccepted { get; set; }
+    public int BaselineSolutionsStale { get; set; }
+    public int BaselineTasksDistributed { get; set; }
+    public bool BaselineSet { get; set; }
+
+    // DOGE blocks (from pool_blocks collection)
+    public int BlocksFound { get; set; }
+    public int BlocksConfirmed { get; set; }
+    public int SharesValid { get; set; }
+
+    public bool IsFinalized { get; set; }  // true once epoch has ended
+}
+
+// All-time aggregated stats across all epochs — one record, upserted each epoch-end
+public class AllTimeStats
+{
+    [BsonId]
+    public int Id { get; set; } = 1; // singleton
+    public DateTimeOffset UpdatedAt { get; set; }
+
+    public long PeakHashrate { get; set; }
+    public string PeakHashrateDisplay { get; set; } = "";
+    public int PeakHashrateEpoch { get; set; }
+    public DateTimeOffset PeakHashrateAt { get; set; }
+
+    public double PeakNetworkSharePct { get; set; }
+    public int PeakNetworkShareEpoch { get; set; }
+    public DateTimeOffset PeakNetworkShareAt { get; set; }
+
+    // Cumulative totals across all finalized epochs
+    public int TotalPoolAccepted { get; set; }
+    public int TotalPoolRejected { get; set; }
+    public int TotalSolutionsAccepted { get; set; }
+    public int TotalSolutionsStale { get; set; }
+    public int TotalTasksDistributed { get; set; }
+    public int TotalBlocksFound { get; set; }
+    public int TotalBlocksConfirmed { get; set; }
+    public int TotalSharesValid { get; set; }
+
+    // Peak per-epoch counter values (highest single-epoch value ever recorded)
+    public int PeakPoolAccepted { get; set; }
+    public int PeakPoolAcceptedEpoch { get; set; }
+    public int PeakPoolRejected { get; set; }
+    public int PeakPoolRejectedEpoch { get; set; }
+    public int PeakSolutionsAccepted { get; set; }
+    public int PeakSolutionsAcceptedEpoch { get; set; }
+    public int PeakSolutionsStale { get; set; }
+    public int PeakSolutionsStaleEpoch { get; set; }
+    public int PeakTasksDistributed { get; set; }
+    public int PeakTasksDistributedEpoch { get; set; }
+    public int PeakBlocksFound { get; set; }
+    public int PeakBlocksFoundEpoch { get; set; }
+    public int PeakBlocksConfirmed { get; set; }
+    public int PeakBlocksConfirmedEpoch { get; set; }
+    public int PeakSharesValid { get; set; }
+    public int PeakSharesValidEpoch { get; set; }
 }

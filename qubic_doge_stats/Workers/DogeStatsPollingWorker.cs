@@ -12,7 +12,12 @@ public class DogeStatsPollingWorker : BackgroundService
 
     // Epoch cache — shared across polls (worker is singleton-lifetime as hosted service)
     private int _cachedEpoch = 0;
+    private int _previousEpoch = 0;
     private DateTimeOffset _epochFetchedAt = DateTimeOffset.MinValue;
+
+    // Shared epoch for use by other workers (e.g. PoolPollingWorker)
+    public static int CurrentEpoch => _sharedEpoch;
+    private static int _sharedEpoch = 0;
 
     public DogeStatsPollingWorker(IServiceProvider services, ILogger<DogeStatsPollingWorker> logger, IConfiguration config)
     {
@@ -42,6 +47,7 @@ public class DogeStatsPollingWorker : BackgroundService
             var client = scope.ServiceProvider.GetRequiredService<DogeStatsClient>();
             var rpc = scope.ServiceProvider.GetRequiredService<QubicRpcClient>();
             var db = scope.ServiceProvider.GetRequiredService<LiteDbContext>();
+            var epochSvc = scope.ServiceProvider.GetRequiredService<EpochSummaryService>();
 
             var response = await client.FetchAsync(ct);
             if (response is null) return;
@@ -54,13 +60,19 @@ public class DogeStatsPollingWorker : BackgroundService
                 {
                     var newEpoch = tickInfo.TickInfo.Epoch;
                     if (newEpoch != _cachedEpoch && _cachedEpoch != 0)
+                    {
                         _logger.LogInformation("Qubic epoch changed: {Old} → {New}", _cachedEpoch, newEpoch);
+                        _previousEpoch = _cachedEpoch;
+                    }
 
                     _cachedEpoch = newEpoch;
+                    _sharedEpoch = newEpoch;
                     _epochFetchedAt = DateTimeOffset.UtcNow;
                     _logger.LogDebug("Epoch refreshed: {Epoch}", _cachedEpoch);
                 }
             }
+
+            var networkHashrate = DogeExplorerPollingWorker.LatestStats?.NetworkHashrate ?? 0;
 
             var snapshot = new HashrateSnapshot
             {
@@ -82,11 +94,22 @@ public class DogeStatsPollingWorker : BackgroundService
                 SolutionsStale = response.Solutions.Stale,
                 UptimeSeconds = response.UptimeSeconds,
                 QueueSolutions = response.Queues.Solutions,
-                QueueStratum = response.Queues.Stratum
+                QueueStratum = response.Queues.Stratum,
+                NetworkHashrate = networkHashrate
             };
 
             db.InsertSnapshot(snapshot);
             _logger.LogDebug("Snapshot saved: {Hashrate} (Epoch {Epoch})", snapshot.HashrateDisplay, snapshot.QubicEpoch);
+
+            // Finalize summary for the just-ended epoch
+            if (_previousEpoch > 0)
+            {
+                epochSvc.FinalizeEpoch(_previousEpoch);
+                _previousEpoch = 0;
+            }
+
+            // Update current epoch peaks + deltas live on every poll
+            epochSvc.UpdateLive(snapshot);
         }
         catch (Exception ex)
         {

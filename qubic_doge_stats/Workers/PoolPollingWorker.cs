@@ -40,6 +40,10 @@ public class PoolPollingWorker : BackgroundService
                 return;
             }
 
+            var currentPrice = DogePricePollingWorker.LatestPrice?.UsdPrice ?? 0m;
+
+            var currentEpoch = DogeStatsPollingWorker.CurrentEpoch;
+
             foreach (var rb in response.RecentBlocks)
             {
                 db.UpsertPoolBlock(new PoolBlock
@@ -49,7 +53,8 @@ public class PoolPollingWorker : BackgroundService
                     Worker = rb.Worker,
                     Time = rb.Time,
                     Confirmed = rb.Confirmed,
-                    QubicEpoch = DeriveEpoch(rb.Time)
+                    QubicEpoch = currentEpoch,
+                    DogePriceUsdAtFind = currentPrice
                 });
             }
 
@@ -65,7 +70,8 @@ public class PoolPollingWorker : BackgroundService
                     Worker = "",
                     Time = lb.Time,
                     Confirmed = response.Blocks.Confirmed > 0,
-                    QubicEpoch = DeriveEpoch(lb.Time)
+                    QubicEpoch = currentEpoch,
+                    DogePriceUsdAtFind = currentPrice
                 });
             }
 
@@ -89,11 +95,4 @@ public class PoolPollingWorker : BackgroundService
         }
     }
 
-    // Epoch 180 reference: 2026-03-26 12:00 UTC (Wednesday). Each epoch = 7 days.
-    private static int DeriveEpoch(DateTimeOffset time)
-    {
-        var epoch180Start = new DateTimeOffset(2026, 3, 26, 12, 0, 0, TimeSpan.Zero);
-        var weeksSince = (time - epoch180Start).TotalDays / 7.0;
-        return 180 + (int)Math.Floor(weeksSince);
-    }
 }

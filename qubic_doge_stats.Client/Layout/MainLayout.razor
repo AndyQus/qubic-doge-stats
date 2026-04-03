@@ -29,10 +29,9 @@
             <CascadingValue Value="_isDarkMode" Name="IsDarkMode">
                 @Body
             </CascadingValue>
+            <FooterComponent />
         </MudContainer>
     </MudMainContent>
-
-    <FooterComponent />
 </MudLayout>
 
 <div id="blazor-error-ui">
@@ -73,7 +72,6 @@
     {
         if (firstRender)
         {
-            _isDarkMode = await _themeProvider.GetSystemDarkModeAsync();
             await JS.InvokeVoidAsync("eval", "document.activeElement?.blur()");
             StateHasChanged();
         }

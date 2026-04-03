@@ -33,6 +33,14 @@ public static class ApiEndpoints
             return Results.Ok(blocks);
         });
 
+        api.MapGet("/pool/historical-reward", (LiteDbContext db) =>
+        {
+            const decimal dogePerBlock = 10_000m;
+            var totalUsd = db.GetHistoricalBlockRewardUsd(dogePerBlock);
+            var blocksWithPrice = db.GetAllPoolBlocks().Count(b => b.DogePriceUsdAtFind > 0);
+            return Results.Ok(new { TotalUsd = totalUsd, BlocksWithPrice = blocksWithPrice });
+        });
+
         api.MapGet("/network/stats", () =>
         {
             var stats = DogeExplorerPollingWorker.LatestStats;
@@ -43,6 +51,29 @@ public static class ApiEndpoints
         {
             var price = DogePricePollingWorker.LatestPrice;
             return price is not null ? Results.Ok(price) : Results.NotFound();
+        });
+
+        api.MapGet("/epochs/latest", (LiteDbContext db) =>
+        {
+            var summary = db.GetLatestEpochSummary();
+            return summary is not null ? Results.Ok(summary) : Results.NotFound();
+        });
+
+        api.MapGet("/epochs/all", (LiteDbContext db) =>
+        {
+            return Results.Ok(db.GetAllEpochSummaries());
+        });
+
+        api.MapGet("/epochs/{epochNumber:int}", (int epochNumber, LiteDbContext db) =>
+        {
+            var summary = db.GetEpochSummary(epochNumber);
+            return summary is not null ? Results.Ok(summary) : Results.NotFound();
+        });
+
+        api.MapGet("/stats/alltime", (LiteDbContext db) =>
+        {
+            var stats = db.GetAllTimeStats();
+            return stats is not null ? Results.Ok(stats) : Results.NotFound();
         });
 
     }

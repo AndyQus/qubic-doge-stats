@@ -10,23 +10,27 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 
 ## Features
 
-- Live hashrate monitoring (GH/s) with 60-minute trend chart
+- Live hashrate monitoring (TH/s) with 60-minute trend chart
 - **Pool Share of Network** — pool hashrate as a percentage of total DOGE network hashrate (24h average)
-- Pool stats: accepted / rejected / submitted shares
-- Solutions tracking: accepted, received, rejected, stale
+- Pool stats: accepted / rejected / valid shares with epoch peaks and all-time totals
+- Solutions tracking: accepted, stale, tasks distributed — with epoch peaks and all-time totals
 - Connected peers and active tasks
 - **DOGE price** (USD) — polled hourly from CoinPaprika
 - Qubic epoch tracking with automatic epoch-change detection
+- **Epoch & Total stats** on every panel — peak single-epoch value + cumulative all-time total
+- **DataBackfillService** — retroactively assigns correct Qubic epochs to historical snapshots on startup; configurable via `DataBackfill:Enabled`
 - Epoch comparison charts (hashrate, solutions & pool shares per epoch)
 - Current epoch timeline chart (day-by-day breakdown, avg hashrate per day)
 - Today's hashrate by hour
 - **Tooltips on all stat cards** — hover the info icon for an explanation of each metric
+- **Panel color scheme**: purple = mining performance, cyan = system status, gold = DOGE/finance, green = positive/confirmed, red = rejected, orange = stale
+- **Snackbar notification** when a new DOGE block is found — shows date & time, stays until dismissed
 - **Dogecoin Pool Dashboard** (tabbed on home page):
   - Live pool stats: blocks found/confirmed, shares valid/invalid, session uptime
   - Blocks per epoch bar chart
   - Recent blocks table with links to Dogechain Explorer
   - Full block history table
-- **Light / dark mode** with iOS-style glassmorphism panels in light mode
+- **Dark mode** by default (toggle available); iOS-style glassmorphism panels
 - Fully self-hosted via Docker
 
 ---
@@ -52,6 +56,12 @@ External APIs
            │           └──────────┬──────────┘
            │                      │
            │           LiteDB  (doge_stats.db)
+           │                      │
+  DataBackfillService      EpochSummaryService
+  (once at startup:         (every poll: live
+   tag epochs, rebuild       peaks & counters;
+   EpochSummary +            on epoch end:
+   AllTimeStats)             finalize + totals)
            │                      │
            └──────────────────────┤
                                   │
@@ -277,6 +287,7 @@ All settings can be overridden via `appsettings.json`, environment variables, or
 | `PoolStats:ApiUrl` | `https://doge-stats.qubic.org/pool.json` | DOGE pool stats source |
 | `QubicRpc:BaseUrl` | `https://rpc.qubic.org/` | Qubic RPC base URL |
 | `LiteDb:Filename` | `Data/doge_stats.db` | LiteDB database file path |
+| `DataBackfill:Enabled` | `true` | Run DataBackfillService on startup (set to `false` once data is correct) |
 
 **Docker environment variables:**
 

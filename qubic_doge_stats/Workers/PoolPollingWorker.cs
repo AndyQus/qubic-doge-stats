@@ -53,6 +53,22 @@ public class PoolPollingWorker : BackgroundService
                 });
             }
 
+            // Fallback: recentBlocks can be empty if the block is older than the pool's sliding window.
+            // Use lastBlock to ensure it is always persisted (hash/worker will be empty until recentBlocks catches up).
+            if (response.LastBlock is { } lb &&
+                response.RecentBlocks.All(rb => rb.Height != lb.Height))
+            {
+                db.UpsertPoolBlock(new PoolBlock
+                {
+                    Height = lb.Height,
+                    Hash = "",
+                    Worker = "",
+                    Time = lb.Time,
+                    Confirmed = response.Blocks.Confirmed > 0,
+                    QubicEpoch = DeriveEpoch(lb.Time)
+                });
+            }
+
             LatestStats = new PoolLiveStats
             {
                 SessionStart = DateTimeOffset.UtcNow.AddSeconds(-response.Uptime),

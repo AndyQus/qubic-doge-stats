@@ -70,12 +70,21 @@ public class LiteDbContext : IDisposable
         lock (_lock)
         {
             var col = _db.GetCollection<PoolBlock>("pool_blocks");
-            var existing = col.FindOne(x => x.Hash == block.Hash);
+            // Deduplicate by Height; prefer a record with a known hash over one without
+            var existing = col.FindOne(x => x.Height == block.Height);
             if (existing is null)
+            {
                 col.Insert(block);
+            }
             else
             {
                 block.Id = existing.Id;
+                // Keep existing hash/worker if the new record has none (lastBlock fallback)
+                if (string.IsNullOrEmpty(block.Hash) && !string.IsNullOrEmpty(existing.Hash))
+                {
+                    block.Hash = existing.Hash;
+                    block.Worker = existing.Worker;
+                }
                 col.Update(block);
             }
         }

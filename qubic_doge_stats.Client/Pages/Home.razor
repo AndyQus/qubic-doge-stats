@@ -453,18 +453,7 @@ else
         </MudGrid>
 
     </MudTabPanel>
-    <MudTabPanel Text="Pool" Icon="@Icons.Material.Filled.Waves">
-
-        <MudText Typo="Typo.caption" Class="mb-3 dim-text">
-            @if (_poolStats?.LastShareTime.HasValue == true)
-            {
-                @($"Last share: {_poolStats.LastShareTime.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}")
-            }
-            else
-            {
-                @("Last share: –")
-            }
-        </MudText>
+    <MudTabPanel Text="Blocks" Icon="@Icons.Material.Filled.ViewList">
 
         @* Blocks per Epoch Chart + Recent Blocks table *@
         <MudGrid Class="mb-2">

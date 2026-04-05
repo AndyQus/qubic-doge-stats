@@ -56,4 +56,10 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<AllTimeStats>("/api/stats/alltime"); }
         catch { return null; }
     }
+
+    public async Task<MiningPoolRanking?> GetMiningPoolRankingAsync()
+    {
+        try { return await _http.GetFromJsonAsync<MiningPoolRanking>("/api/mining-pools/ranking"); }
+        catch { return null; }
+    }
 }

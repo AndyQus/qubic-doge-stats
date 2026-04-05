@@ -60,6 +60,21 @@ builder.Services.AddHttpClient<DogePriceClient>(client =>
 builder.Services.AddHostedService<DogePricePollingWorker>();
 builder.Services.AddHostedService<DataBackfillService>();
 
+// Mining Pool Ranking HTTP client (miningpoolstats.stream)
+// Strategy: fetch main page first to get the Cloudflare-cached timestamp, then use it for the data request.
+builder.Services.AddHttpClient<MiningPoolRankingClient>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
+    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    client.DefaultRequestHeaders.Add("Origin", "https://miningpoolstats.stream");
+    client.DefaultRequestHeaders.Add("Referer", "https://miningpoolstats.stream/dogecoin");
+    client.DefaultRequestHeaders.Add("sec-fetch-site", "same-site");
+    client.DefaultRequestHeaders.Add("sec-fetch-mode", "cors");
+    client.DefaultRequestHeaders.Add("sec-fetch-dest", "empty");
+});
+
+builder.Services.AddHostedService<MiningPoolRankingWorker>();
+
 // CORS
 builder.Services.AddCors(options =>
 {

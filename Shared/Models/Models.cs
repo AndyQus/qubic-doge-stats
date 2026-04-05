@@ -205,6 +205,7 @@ public class EpochSummary
     public int BaselineSolutionsAccepted { get; set; }
     public int BaselineSolutionsStale { get; set; }
     public int BaselineTasksDistributed { get; set; }
+    public int BaselineSharesValid { get; set; }
     public bool BaselineSet { get; set; }
 
     // DOGE blocks (from pool_blocks collection)
@@ -258,4 +259,20 @@ public class AllTimeStats
     public int PeakBlocksConfirmedEpoch { get; set; }
     public int PeakSharesValid { get; set; }
     public int PeakSharesValidEpoch { get; set; }
+}
+
+public class MiningPoolEntry
+{
+    public int Rank { get; set; }
+    public string Name { get; set; } = "";
+    public double HashrateGHs { get; set; }   // GH/s for display
+}
+
+public class MiningPoolRanking
+{
+    public MiningPoolEntry? Above { get; set; }   // null if qubic is #1
+    public MiningPoolEntry Qubic { get; set; } = new();
+    public MiningPoolEntry? Below { get; set; }   // null if qubic is last
+    public int TotalPools { get; set; }
+    public DateTimeOffset FetchedAt { get; set; }
 }

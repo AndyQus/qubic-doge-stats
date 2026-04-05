@@ -76,5 +76,11 @@ public static class ApiEndpoints
             return stats is not null ? Results.Ok(stats) : Results.NotFound();
         });
 
+        api.MapGet("/mining-pools/ranking", () =>
+        {
+            var ranking = MiningPoolRankingWorker.LatestRanking;
+            return ranking is not null ? Results.Ok(ranking) : Results.NotFound();
+        });
+
     }
 }

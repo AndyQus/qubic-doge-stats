@@ -58,6 +58,57 @@
                       Tooltip="Confirmed DOGE blocks. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time." />
         </MudItem>
 
+        @* ── Mining Pool Ranking ── *@
+        <MudItem xs="12" sm="6" md="3">
+            @if (_miningPoolRanking is not null)
+            {
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                        <MudIcon Icon="@Icons.Material.Filled.Leaderboard" Style="color:#7e6fff; font-size:1.1rem;" />
+                        <MudLink Href="https://miningpoolstats.stream/dogecoin" Target="_blank"
+                                 Style="font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:0.75rem; color:var(--mud-palette-text-secondary); text-decoration:none; display:flex; align-items:center; gap:3px;"
+                                 Underline="Underline.Hover">Pool Ranking (DOGE)<MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size:0.75rem;" /></MudLink>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        @if (_miningPoolRanking.Above is { } above)
+                        {
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; border-radius:6px; background:rgba(255,255,255,0.04);">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span style="font-size:0.7rem; color:var(--mud-palette-text-secondary); min-width:22px;">#@above.Rank</span>
+                                    <span style="font-size:0.82rem; color:var(--mud-palette-text-secondary);">@above.Name</span>
+                                </div>
+                                <span style="font-size:0.78rem; color:var(--mud-palette-text-secondary);">@FormatGHs(above.HashrateGHs)</span>
+                            </div>
+                        }
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 8px; border-radius:6px; background:rgba(126,111,255,0.18); border:1px solid rgba(126,111,255,0.35);">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:0.75rem; font-weight:700; color:#7e6fff; min-width:22px;">#@_miningPoolRanking.Qubic.Rank</span>
+                                <span style="font-size:0.88rem; font-weight:600; color:#7e6fff;">@_miningPoolRanking.Qubic.Name</span>
+                            </div>
+                            <span style="font-size:0.82rem; font-weight:600; color:#7e6fff;">@FormatGHs(_miningPoolRanking.Qubic.HashrateGHs)</span>
+                        </div>
+                        @if (_miningPoolRanking.Below is { } below)
+                        {
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; border-radius:6px; background:rgba(255,255,255,0.04);">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span style="font-size:0.7rem; color:var(--mud-palette-text-secondary); min-width:22px;">#@below.Rank</span>
+                                    <span style="font-size:0.82rem; color:var(--mud-palette-text-secondary);">@below.Name</span>
+                                </div>
+                                <span style="font-size:0.78rem; color:var(--mud-palette-text-secondary);">@FormatGHs(below.HashrateGHs)</span>
+                            </div>
+                        }
+                        <MudText Typo="Typo.caption" Class="mt-1" Style="color:var(--mud-palette-text-secondary); font-size:0.68rem; text-align:right;">of @_miningPoolRanking.TotalPools pools · @_miningPoolRanking.FetchedAt.ToLocalTime().ToString("HH:mm")</MudText>
+                    </div>
+                </MudPaper>
+            }
+            else
+            {
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%; display:flex; align-items:center; justify-content:center;">
+                    <MudText Typo="Typo.caption" Class="dim-text">Ranking loading...</MudText>
+                </MudPaper>
+            }
+        </MudItem>
+
         @* ── Zeile 2: Systeminformationen ── *@
         <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.LayersClear"
@@ -613,6 +664,7 @@ else
     private DogePriceStats? _dogePrice;
     private EpochSummary? _latestEpochSummary;
     private AllTimeStats? _allTimeStats;
+    private MiningPoolRanking? _miningPoolRanking;
     private List<HashrateSnapshot> _history = [];
     private List<HashrateSnapshot> _fullHistory = [];
     private DateTimeOffset _lastRefresh = DateTimeOffset.UtcNow;
@@ -698,6 +750,7 @@ else
         _recentBlocks = await Api.GetPoolBlocksAsync();
         _latestEpochSummary = await Api.GetLatestEpochSummaryAsync();
         _allTimeStats = await Api.GetAllTimeStatsAsync();
+        _miningPoolRanking = await Api.GetMiningPoolRankingAsync();
 
         // Running epoch not yet finalized → add its values on top of finalized totals
         var runningEpoch = _latestEpochSummary is { IsFinalized: false } ? _latestEpochSummary : null;
@@ -968,6 +1021,13 @@ _lastRefresh = DateTimeOffset.UtcNow;
             prev = val;
         }
         return sum;
+    }
+
+    private static string FormatGHs(double ghPerSec)
+    {
+        if (ghPerSec >= 1000) return $"{ghPerSec / 1000:F1} TH/s";
+        if (ghPerSec >= 1) return $"{ghPerSec:F1} GH/s";
+        return $"{ghPerSec * 1000:F0} MH/s";
     }
 
     private static string FormatHashrateDisplay(long hashrate, string _ = "")

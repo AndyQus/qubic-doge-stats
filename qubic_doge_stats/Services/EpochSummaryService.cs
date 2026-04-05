@@ -35,12 +35,6 @@ public class EpochSummaryService
                 EpochStart = snapshot.Timestamp,
             };
 
-            if (!summary.BaselineSet)
-            {
-                summary.BaselineSet = true;
-                _logger.LogInformation("Epoch {Epoch} first snapshot seen", snapshot.QubicEpoch);
-            }
-
             // Update peak hashrate
             if (snapshot.Hashrate > summary.PeakHashrate)
             {
@@ -60,20 +54,50 @@ public class EpochSummaryService
                 }
             }
 
-            // Same logic as SharesValid: Math.Max so value never decreases.
-            // Shows the full pool session value; BackfillLiveEpoch corrects via SumPositiveIncrements.
-            summary.TotalPoolAccepted      = Math.Max(summary.TotalPoolAccepted,      snapshot.PoolAccepted);
-            summary.TotalPoolRejected      = Math.Max(summary.TotalPoolRejected,      snapshot.PoolRejected);
-            summary.TotalSolutionsAccepted = Math.Max(summary.TotalSolutionsAccepted, snapshot.SolutionsAccepted);
-            summary.TotalSolutionsStale    = Math.Max(summary.TotalSolutionsStale,    snapshot.SolutionsStale);
-            summary.TotalTasksDistributed  = Math.Max(summary.TotalTasksDistributed,  snapshot.TasksDistributed);
+            // Streaming SumPositiveIncrements:
+            // On first snapshot set baseline = current value (ignore carry-over from previous epoch/session).
+            // On each subsequent snapshot add only positive increments — pool restarts are handled
+            // by treating a drop as a reset (delta ignored, baseline updated).
+            var currentSharesValid = Workers.PoolPollingWorker.LatestStats?.SharesValid ?? 0;
+
+            if (!summary.BaselineSet)
+            {
+                summary.BaselinePoolAccepted      = snapshot.PoolAccepted;
+                summary.BaselinePoolRejected      = snapshot.PoolRejected;
+                summary.BaselineSolutionsAccepted = snapshot.SolutionsAccepted;
+                summary.BaselineSolutionsStale    = snapshot.SolutionsStale;
+                summary.BaselineTasksDistributed  = snapshot.TasksDistributed;
+                summary.BaselineSharesValid       = currentSharesValid;
+                summary.BaselineSet = true;
+                _logger.LogInformation("Epoch {Epoch} baseline set", snapshot.QubicEpoch);
+            }
+            else
+            {
+                if (snapshot.PoolAccepted      > summary.BaselinePoolAccepted)
+                    summary.TotalPoolAccepted      += snapshot.PoolAccepted      - summary.BaselinePoolAccepted;
+                if (snapshot.PoolRejected      > summary.BaselinePoolRejected)
+                    summary.TotalPoolRejected      += snapshot.PoolRejected      - summary.BaselinePoolRejected;
+                if (snapshot.SolutionsAccepted > summary.BaselineSolutionsAccepted)
+                    summary.TotalSolutionsAccepted += snapshot.SolutionsAccepted - summary.BaselineSolutionsAccepted;
+                if (snapshot.SolutionsStale    > summary.BaselineSolutionsStale)
+                    summary.TotalSolutionsStale    += snapshot.SolutionsStale    - summary.BaselineSolutionsStale;
+                if (snapshot.TasksDistributed  > summary.BaselineTasksDistributed)
+                    summary.TotalTasksDistributed  += snapshot.TasksDistributed  - summary.BaselineTasksDistributed;
+                if (currentSharesValid         > summary.BaselineSharesValid)
+                    summary.SharesValid            += currentSharesValid         - summary.BaselineSharesValid;
+
+                // Always update baseline to current value (tracks prev poll for next increment)
+                summary.BaselinePoolAccepted      = snapshot.PoolAccepted;
+                summary.BaselinePoolRejected      = snapshot.PoolRejected;
+                summary.BaselineSolutionsAccepted = snapshot.SolutionsAccepted;
+                summary.BaselineSolutionsStale    = snapshot.SolutionsStale;
+                summary.BaselineTasksDistributed  = snapshot.TasksDistributed;
+                summary.BaselineSharesValid       = currentSharesValid;
+            }
 
             // Live block counts — never let them decrease due to race conditions at startup
             summary.BlocksFound     = Math.Max(summary.BlocksFound,     _db.GetBlocksFoundByEpoch(snapshot.QubicEpoch));
             summary.BlocksConfirmed = Math.Max(summary.BlocksConfirmed, _db.GetBlocksConfirmedByEpoch(snapshot.QubicEpoch));
-
-            // SharesValid comes from pool.json (not in snapshot) — take current session value
-            summary.SharesValid = Math.Max(summary.SharesValid, Workers.PoolPollingWorker.LatestStats?.SharesValid ?? 0);
             summary.EpochEnd = snapshot.Timestamp;
 
             _db.UpsertEpochSummary(summary);
@@ -130,14 +154,14 @@ public class EpochSummaryService
             summary.BlocksFound     = db.GetBlocksFoundByEpoch(epochNumber);
             summary.BlocksConfirmed = db.GetBlocksConfirmedByEpoch(epochNumber);
 
-            // Mark baseline as set so UpdateLive can take over cleanly on next poll
+            // Set baseline to LAST snapshot so UpdateLive continues streaming from the correct point
             summary.BaselineSet = true;
-            var first = snapshots.First();
-            summary.BaselinePoolAccepted      = first.PoolAccepted;
-            summary.BaselinePoolRejected      = first.PoolRejected;
-            summary.BaselineSolutionsAccepted = first.SolutionsAccepted;
-            summary.BaselineSolutionsStale    = first.SolutionsStale;
-            summary.BaselineTasksDistributed  = first.TasksDistributed;
+            var last = snapshots.Last();
+            summary.BaselinePoolAccepted      = last.PoolAccepted;
+            summary.BaselinePoolRejected      = last.PoolRejected;
+            summary.BaselineSolutionsAccepted = last.SolutionsAccepted;
+            summary.BaselineSolutionsStale    = last.SolutionsStale;
+            summary.BaselineTasksDistributed  = last.TasksDistributed;
 
             db.UpsertEpochSummary(summary);
             _logger.LogInformation(

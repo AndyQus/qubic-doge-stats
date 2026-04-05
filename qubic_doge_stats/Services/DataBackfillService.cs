@@ -75,26 +75,29 @@ public class DataBackfillService : BackgroundService
             // Step 3: Fix pool_blocks with wrong/missing QubicEpoch
             FixPoolBlockEpochs(db, allEpochs);
 
-            // Step 4: Process each epoch
+            // Step 4: Reset inflated counter fields in the current epoch summary.
+            // Counters (PoolAccepted, Solutions etc.) are cumulative per pool session and do NOT
+            // reset at epoch boundaries — so stored values may include carry-over from earlier epochs.
+            // Resetting to 0 + BaselineSet=false lets UpdateLive re-initialize cleanly on next poll.
+            ResetCounterFields(db, currentEpoch);
+
+            // Step 5: Process each epoch
             foreach (var epoch in allEpochs)
             {
+                if (epoch == currentEpoch)
+                {
+                    // Running epoch: already reset above — UpdateLive will re-initialize on next poll
+                    _logger.LogInformation("DataBackfill: current epoch {Epoch} reset — UpdateLive will pick up on next poll", epoch);
+                    continue;
+                }
+
                 var snapshots = db.GetSnapshotsByEpoch(epoch);
                 if (snapshots.Count == 0) continue;
 
-                if (epoch == currentEpoch)
-                {
-                    // Running epoch: compute live summary (IsFinalized = false)
-                    epochSvc.BackfillLiveEpoch(epoch, snapshots, db);
-                    _logger.LogInformation("DataBackfill: current epoch {Epoch} live summary computed ({Count} snapshots)",
-                        epoch, snapshots.Count);
-                }
-                else
-                {
-                    // Completed epoch: finalize (IsFinalized = true)
-                    epochSvc.FinalizeEpoch(epoch);
-                    _logger.LogInformation("DataBackfill: epoch {Epoch} finalized ({Count} snapshots)",
-                        epoch, snapshots.Count);
-                }
+                // Completed epoch: finalize (IsFinalized = true)
+                epochSvc.FinalizeEpoch(epoch);
+                _logger.LogInformation("DataBackfill: epoch {Epoch} finalized ({Count} snapshots)",
+                    epoch, snapshots.Count);
             }
 
             // Step 5: Rebuild AllTimeStats from FINALIZED epochs only.
@@ -156,6 +159,82 @@ public class DataBackfillService : BackgroundService
         var candidate = new DateTimeOffset(lastWed, TimeSpan.Zero).AddHours(12);
         if (candidate > reference) candidate = candidate.AddDays(-7);
         return candidate;
+    }
+
+    /// <summary>
+    /// Resets the 5 cumulative counter fields in the current epoch's EpochSummary to 0
+    /// and clears BaselineSet so UpdateLive re-initializes with a clean baseline on the next poll.
+    /// Also clears the corresponding peaks and totals in AllTimeStats.
+    /// </summary>
+    private void ResetCounterFields(LiteDbContext db, int currentEpoch)
+    {
+        var summary = db.GetEpochSummary(currentEpoch);
+        if (summary is null)
+        {
+            _logger.LogInformation("DataBackfill: no EpochSummary for epoch {Epoch} — nothing to reset", currentEpoch);
+            return;
+        }
+
+        // Initialize counters from the latest snapshot so the Epoch value starts at the
+        // current live state instead of zero — UpdateLive then only adds new increments.
+        var latest = db.GetLatestSnapshot();
+        if (latest is not null && latest.QubicEpoch == currentEpoch)
+        {
+            summary.TotalPoolAccepted         = latest.PoolAccepted;
+            summary.TotalPoolRejected         = latest.PoolRejected;
+            summary.TotalSolutionsAccepted    = latest.SolutionsAccepted;
+            summary.TotalSolutionsStale       = latest.SolutionsStale;
+            summary.TotalTasksDistributed     = latest.TasksDistributed;
+            summary.BaselinePoolAccepted      = latest.PoolAccepted;
+            summary.BaselinePoolRejected      = latest.PoolRejected;
+            summary.BaselineSolutionsAccepted = latest.SolutionsAccepted;
+            summary.BaselineSolutionsStale    = latest.SolutionsStale;
+            summary.BaselineTasksDistributed  = latest.TasksDistributed;
+            summary.BaselineSet               = true;
+        }
+        else
+        {
+            summary.TotalPoolAccepted      = 0;
+            summary.TotalPoolRejected      = 0;
+            summary.TotalSolutionsAccepted = 0;
+            summary.TotalSolutionsStale    = 0;
+            summary.TotalTasksDistributed  = 0;
+            summary.BaselineSet            = false;
+        }
+
+        var sharesValid = PoolPollingWorker.LatestStats?.SharesValid ?? 0;
+        summary.SharesValid         = sharesValid;
+        summary.BaselineSharesValid = sharesValid;
+
+        db.UpsertEpochSummary(summary);
+        _logger.LogInformation("DataBackfill: counters initialized from live snapshot for epoch {Epoch}", currentEpoch);
+
+        // Also reset AllTimeStats peaks and totals for these 5 counters
+        var stats = db.GetAllTimeStats();
+        if (stats is not null)
+        {
+            stats.TotalPoolAccepted      = 0;
+            stats.TotalPoolRejected      = 0;
+            stats.TotalSolutionsAccepted = 0;
+            stats.TotalSolutionsStale    = 0;
+            stats.TotalTasksDistributed  = 0;
+            stats.TotalSharesValid       = 0;
+            stats.PeakPoolAccepted       = 0;
+            stats.PeakPoolAcceptedEpoch  = 0;
+            stats.PeakPoolRejected       = 0;
+            stats.PeakPoolRejectedEpoch  = 0;
+            stats.PeakSolutionsAccepted  = 0;
+            stats.PeakSolutionsAcceptedEpoch = 0;
+            stats.PeakSolutionsStale     = 0;
+            stats.PeakSolutionsStaleEpoch = 0;
+            stats.PeakTasksDistributed   = 0;
+            stats.PeakTasksDistributedEpoch = 0;
+            stats.PeakSharesValid        = 0;
+            stats.PeakSharesValidEpoch   = 0;
+            stats.UpdatedAt = DateTimeOffset.UtcNow;
+            db.UpsertAllTimeStats(stats);
+            _logger.LogInformation("DataBackfill: AllTimeStats counter peaks/totals reset");
+        }
     }
 
     private void FixPoolBlockEpochs(LiteDbContext db, List<int> validEpochs)

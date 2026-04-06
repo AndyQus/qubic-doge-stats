@@ -35,6 +35,21 @@
                       Color="#7e6fff"
                       Tooltip="Pool's share of the total Dogecoin network hashrate (24h avg). Ep Peak: highest in last completed epoch. ATH: highest ever recorded." />
         </MudItem>
+
+          @* ── Pool Rank StatCard ── *@
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Icon="@Icons.Material.Filled.EmojiEvents"
+                      Title="Pool Rank (DOGE)"
+                      Value="@(_miningPoolRanking is not null ? $"#{_miningPoolRanking.Qubic.Rank}" : "–")"
+                      ValueLabel="@(_miningPoolRanking is not null ? $"of {_miningPoolRanking.TotalPools}" : "")"
+                      SecondaryValue="@(_latestEpochSummary is not null && _latestEpochSummary.BestRank > 0 ? $"#{_latestEpochSummary.BestRank}" : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_allTimeStats is not null && _allTimeStats.BestRank > 0 ? $"#{_allTimeStats.BestRank} · E{_allTimeStats.BestRankEpoch}" : "–")"
+                      TertiaryLabel="Best"
+                      Color="#7e6fff"
+                      Tooltip="Qubic's rank among all DOGE mining pools by hashrate. Lower = better. Epoch: best rank this epoch. Best: all-time best rank." />
+        </MudItem>
+        
         <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.Stars"
                       Title="DOGE Blocks Found"
@@ -46,6 +61,7 @@
                       Color="#FFD700"
                       Tooltip="Dogecoin blocks found. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time." />
         </MudItem>
+
         <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.Verified"
                       Title="DOGE Blocks Confirmed"
@@ -65,9 +81,10 @@
                 <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
                     <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                         <MudIcon Icon="@Icons.Material.Filled.Leaderboard" Style="color:#7e6fff; font-size:1.1rem;" />
-                        <MudLink Href="https://miningpoolstats.stream/dogecoin" Target="_blank"
-                                 Style="font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:0.75rem; color:var(--mud-palette-text-secondary); text-decoration:none; display:flex; align-items:center; gap:3px;"
-                                 Underline="Underline.Hover">Pool Ranking (DOGE)<MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size:0.75rem;" /></MudLink>
+                        <span style="font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:0.75rem; color:var(--mud-palette-text-secondary);">Pool Ranking (DOGE)</span>
+                        <MudLink Href="https://miningpoolstats.stream/dogecoin" Target="_blank" Underline="Underline.None" Style="display:flex; align-items:center; line-height:1;">
+                            <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size:0.75rem; color:var(--mud-palette-text-secondary);" />
+                        </MudLink>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px;">
                         @if (_miningPoolRanking.Above is { } above)
@@ -107,7 +124,8 @@
                     <MudText Typo="Typo.caption" Class="dim-text">Ranking loading...</MudText>
                 </MudPaper>
             }
-        </MudItem>
+        </MudItem>      
+
 
         @* ── Zeile 2: Systeminformationen ── *@
         <MudItem xs="12" sm="6" md="3">
@@ -327,7 +345,7 @@ else
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
                     <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Avg Hashrate (TH/s)</MudText>
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Peak Hashrate (TH/s)</MudText>
                         <div class="d-flex flex-column align-end">
                             <MudText Typo="Typo.caption" Class="dim-text">
                                 @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by hour
@@ -847,12 +865,12 @@ _lastRefresh = DateTimeOffset.UtcNow;
         ).ToArray();
         _chartSeries = [new ChartSeries<double> { Name = "TH/s", Data = values, TooltipYValueFormat = "F2" }];
 
-        // Today chart: average TH/s per hour bucket (00–23)
+        // Today chart: peak TH/s per hour bucket (00–23)
         var todayLocal = DateTimeOffset.UtcNow.ToLocalTime().Date;
         var byHour = _fullHistory
             .Where(h => h.Timestamp.ToLocalTime().Date == todayLocal)
             .GroupBy(h => h.Timestamp.ToLocalTime().Hour)
-            .ToDictionary(g => g.Key, g => g.Average(x => ToTeraHashPerSecond(x.Hashrate)));
+            .ToDictionary(g => g.Key, g => g.Max(x => ToTeraHashPerSecond(x.Hashrate)));
 
         int currentHour = DateTimeOffset.UtcNow.ToLocalTime().Hour;
         _todayLabels = Enumerable.Range(0, currentHour + 1).Select(h => $"{h:D2}").ToArray();

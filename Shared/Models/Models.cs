@@ -214,6 +214,10 @@ public class EpochSummary
     public int SharesValid { get; set; }
 
     public bool IsFinalized { get; set; }  // true once epoch has ended
+
+    // DOGE mining pool rank (lower = better; 0 = not yet recorded)
+    public int BestRank { get; set; }
+    public DateTimeOffset BestRankAt { get; set; }
 }
 
 // All-time aggregated stats across all epochs — one record, upserted each epoch-end
@@ -259,6 +263,11 @@ public class AllTimeStats
     public int PeakBlocksConfirmedEpoch { get; set; }
     public int PeakSharesValid { get; set; }
     public int PeakSharesValidEpoch { get; set; }
+
+    // DOGE mining pool rank (lower = better; 0 = not yet recorded)
+    public int BestRank { get; set; }
+    public int BestRankEpoch { get; set; }
+    public DateTimeOffset BestRankAt { get; set; }
 }
 
 public class MiningPoolEntry

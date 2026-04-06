@@ -352,5 +352,38 @@ public class LiteDbContext : IDisposable
         UpsertAllTimeStats(stats);
     }
 
+    /// <summary>
+    /// Called after each ranking poll. Updates BestRank in the current EpochSummary and AllTimeStats
+    /// if the new rank is better (lower). Rank 0 means "not yet recorded".
+    /// </summary>
+    public void UpdateRankingBests(int epochNumber, int rank, DateTimeOffset fetchedAt)
+    {
+        if (rank <= 0 || epochNumber <= 0) return;
+        lock (_lock)
+        {
+            // Epoch summary
+            var epochCol = _db.GetCollection<EpochSummary>("epoch_summaries");
+            var epoch = epochCol.FindOne(x => x.EpochNumber == epochNumber);
+            if (epoch is not null && (epoch.BestRank == 0 || rank < epoch.BestRank))
+            {
+                epoch.BestRank   = rank;
+                epoch.BestRankAt = fetchedAt;
+                epochCol.Update(epoch);
+            }
+
+            // All-time stats
+            var atsCol = _db.GetCollection<AllTimeStats>("alltime_stats");
+            var ats = atsCol.FindById(1) ?? new AllTimeStats { UpdatedAt = fetchedAt };
+            if (ats.BestRank == 0 || rank < ats.BestRank)
+            {
+                ats.BestRank      = rank;
+                ats.BestRankEpoch = epochNumber;
+                ats.BestRankAt    = fetchedAt;
+                ats.UpdatedAt     = fetchedAt;
+                atsCol.Upsert(ats);
+            }
+        }
+    }
+
     public void Dispose() => _db.Dispose();
 }

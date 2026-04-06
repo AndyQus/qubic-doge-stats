@@ -1,3 +1,4 @@
+using qubic_doge_stats.Infrastructure;
 using qubic_doge_stats.Services;
 using qubic_doge_stats.Shared.Models;
 
@@ -35,6 +36,12 @@ public class MiningPoolRankingWorker : BackgroundService
             {
                 LatestRanking = ranking;
                 _logger.LogDebug("Pool ranking updated: qubic is #{Rank} of {Total}", ranking.Qubic.Rank, ranking.TotalPools);
+
+                // Persist best rank to epoch summary and all-time stats
+                var db = scope.ServiceProvider.GetRequiredService<LiteDbContext>();
+                var latest = db.GetLatestSnapshot();
+                if (latest is { QubicEpoch: > 0 })
+                    db.UpdateRankingBests(latest.QubicEpoch, ranking.Qubic.Rank, ranking.FetchedAt);
             }
         }
         catch (Exception ex)

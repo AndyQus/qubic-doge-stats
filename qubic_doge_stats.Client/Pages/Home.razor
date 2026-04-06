@@ -41,37 +41,43 @@
             <StatCard Icon="@Icons.Material.Filled.EmojiEvents"
                       Title="Pool Rank (DOGE)"
                       Value="@(_miningPoolRanking is not null ? $"#{_miningPoolRanking.Qubic.Rank}" : "–")"
-                      ValueLabel="@(_miningPoolRanking is not null ? $"of {_miningPoolRanking.TotalPools}" : "")"
                       SecondaryValue="@(_latestEpochSummary is not null && _latestEpochSummary.BestRank > 0 ? $"#{_latestEpochSummary.BestRank}" : "–")"
                       SecondaryLabel="Epoch"
                       TertiaryValue="@(_allTimeStats is not null && _allTimeStats.BestRank > 0 ? $"#{_allTimeStats.BestRank} · E{_allTimeStats.BestRankEpoch}" : "–")"
                       TertiaryLabel="Best"
                       Color="#7e6fff"
-                      Tooltip="Qubic's rank among all DOGE mining pools by hashrate. Lower = better. Epoch: best rank this epoch. Best: all-time best rank." />
+                      Tooltip="@(_miningPoolRanking is not null ? $"Qubic's rank among all DOGE mining pools by hashrate (of {_miningPoolRanking.TotalPools} pools · updated {_miningPoolRanking.FetchedAt.ToLocalTime():HH:mm}). Lower = better. Epoch: best rank this epoch. Best: all-time best rank." : "Qubic's rank among all DOGE mining pools by hashrate. Lower = better.")" />
         </MudItem>
         
         <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.Stars"
-                      Title="DOGE Blocks Found"
-                      Value="@(_poolStats?.BlocksFound.ToString("N0") ?? "–")"
-                      SecondaryValue="@(_peakBlocksFound > 0 ? $"{_peakBlocksFound:N0} · E{_peakBlocksFoundEpoch}" : "–")"
-                      SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : _recentBlocks.Count.ToString("N0"))"
-                      TertiaryLabel="Total"
-                      Color="#FFD700"
-                      Tooltip="Dogecoin blocks found. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time." />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.Verified"
-                      Title="DOGE Blocks Confirmed"
-                      Value="@(_poolStats?.BlocksConfirmed.ToString("N0") ?? "–")"
-                      SecondaryValue="@(_peakBlocksConfirmed > 0 ? $"{_peakBlocksConfirmed:N0} · E{_peakBlocksConfirmedEpoch}" : "–")"
-                      SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")"
-                      TertiaryLabel="Total"
-                      Color="#4caf50"
-                      Tooltip="Confirmed DOGE blocks. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time." />
+            <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Stars" Style="color:#4caf50; font-size:1.4rem;" />
+                    <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">DOGE BLOCKS</MudText>
+                    <MudTooltip Text="Gold = Found, Green = Confirmed. Found: blocks discovered this session / epoch peak (highest single-epoch) / all-time. Confirmed: blocks confirmed on-chain." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                    </MudTooltip>
+                </div>
+                @* Live *@
+                <div class="d-flex gap-2 align-baseline mb-1">
+                    <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_poolStats?.BlocksConfirmed.ToString("N0") ?? "–")</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">(@(_poolStats?.BlocksFound.ToString("N0") ?? "–"))</MudText>
+                </div>
+                @* Epoch peak *@
+                <div class="d-flex align-center gap-1 mt-1">
+                    <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Epoch</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakBlocksConfirmed > 0 ? $"{_peakBlocksConfirmed:N0} · E{_peakBlocksConfirmedEpoch}" : "–")</MudText>
+                    <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_peakBlocksFound > 0 ? $"{_peakBlocksFound:N0} · E{_peakBlocksFoundEpoch}" : "–"))</MudText>
+                </div>
+                @* Total *@
+                <div class="d-flex align-center gap-1 mt-1">
+                    <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Total</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.65; font-weight:600;">@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")</MudText>
+                    <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.65; font-weight:600;">(@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : _recentBlocks.Count.ToString("N0")))</MudText>
+                </div>
+            </MudPaper>
         </MudItem>
 
         @* ── Mining Pool Ranking ── *@
@@ -114,7 +120,6 @@
                                 <span style="font-size:0.78rem; color:var(--mud-palette-text-secondary);">@FormatGHs(below.HashrateGHs)</span>
                             </div>
                         }
-                        <MudText Typo="Typo.caption" Class="mt-1" Style="color:var(--mud-palette-text-secondary); font-size:0.68rem; text-align:right;">of @_miningPoolRanking.TotalPools pools · @_miningPoolRanking.FetchedAt.ToLocalTime().ToString("HH:mm")</MudText>
                     </div>
                 </MudPaper>
             }

@@ -689,7 +689,7 @@ else
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd Style="font-size:0.85rem; font-weight:600;">@context.Model</MudTd>
-                    <MudTd Style="text-align:right; font-size:0.85rem;">@($"{context.HashrateGHs:F0} GH/s")</MudTd>
+                    <MudTd Style="text-align:right; font-size:0.85rem;">@($"{context.HashrateGHs / 1000.0:F2} GH/s")</MudTd>
                     <MudTd Style="text-align:right; font-size:0.85rem; color:var(--mud-palette-text-secondary);">@context.PowerWatts W</MudTd>
                     <MudTd Style="text-align:right; font-size:0.85rem; font-weight:600; color:#FFD700;">
                         @(context.Revenue24hUsd > 0 ? $"${context.Revenue24hUsd:F2}" : "–")
@@ -978,7 +978,7 @@ _lastRefresh = DateTimeOffset.UtcNow;
     [
         new("Antminer L7 9500Mh",  9500, 3425),
         new("Antminer L7 9300Mh",  9300, 3425),
-        new("Antminer L7 9160Mh",  9160, 3425),
+        new("Antminer L7 9160Mh",  9160, 3225),
         new("Antminer L7 9050Mh",  9050, 3260),
     ];
 
@@ -996,8 +996,9 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
         return _l7Specs.Select(s =>
         {
+            double minerGHs = s.HashrateGHs / 1000.0;  // MH/s → GH/s
             double revenue = networkGHs > 0 && dogeUsd > 0
-                ? (s.HashrateGHs / networkGHs) * blocksPerDay * dogePerBlock * dogeUsd
+                ? (minerGHs / networkGHs) * blocksPerDay * dogePerBlock * dogeUsd
                 : 0;
             double powerCost = s.PowerWatts / 1000.0 * 24 * _profPowerCost;
             double profit    = revenue > 0 ? revenue - powerCost : 0;

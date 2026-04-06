@@ -82,5 +82,6 @@ public static class ApiEndpoints
             return ranking is not null ? Results.Ok(ranking) : Results.NotFound();
         });
 
-    }
+
+}
 }

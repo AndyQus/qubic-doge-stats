@@ -285,3 +285,27 @@ public class MiningPoolRanking
     public int TotalPools { get; set; }
     public DateTimeOffset FetchedAt { get; set; }
 }
+
+// ASIC miner profitability data from whattomine.com
+public class AsicMinerData
+{
+    public string Name { get; set; } = "";
+    public string Algorithm { get; set; } = "";
+    public double HashrateGHs { get; set; }  // GH/s
+    public int PowerWatts { get; set; }       // W
+    public double Revenue24hUsd { get; set; } // at whattomine default power cost
+    public DateTimeOffset FetchedAt { get; set; }
+
+    // Calculated client-side based on user's power cost
+    public double Profit24hUsd(double powerCostKwh) =>
+        Revenue24hUsd - (PowerWatts / 1000.0 * 24 * powerCostKwh);
+
+    public double BreakevenKwh =>
+        Revenue24hUsd / (PowerWatts / 1000.0 * 24);
+}
+
+public class AsicProfitabilityData
+{
+    public List<AsicMinerData> Miners { get; set; } = [];
+    public DateTimeOffset FetchedAt { get; set; }
+}

@@ -635,6 +635,79 @@ else
         }
 
     </MudTabPanel>
+
+    @* ── Profitability Tab ── *@
+    <MudTabPanel Text="Profitability" Icon="@Icons.Material.Filled.TrendingUp">
+        <MudText Typo="Typo.h6" Class="mb-1" Style="color:#7e6fff;">ASIC Miner Profitability (Scrypt / DOGE)</MudText>
+        <MudText Typo="Typo.caption" Class="dim-text mb-4 d-block">
+            Revenue estimated from live DOGE price · Specs from Bitmain datasheets · Profit changes with your power cost
+        </MudText>
+
+        @* Settings bar *@
+        <MudPaper Class="glass-card pa-3 mb-4" Elevation="0">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="4" md="3">
+                    <MudNumericField T="double"
+                                     Label="Power cost ($/kWh)"
+                                     @bind-Value="_profPowerCost"
+                                     Min="0" Max="1" Step="0.01"
+                                     Format="F3"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Adornment="Adornment.End"
+                                     AdornmentText="$/kWh" />
+                </MudItem>
+                <MudItem xs="12" sm="4" md="3" Class="d-flex align-center">
+                    @if (_dogePrice is not null)
+                    {
+                        <div>
+                            <MudText Typo="Typo.caption" Class="dim-text">DOGE price</MudText>
+                            <MudText Typo="Typo.body1" Style="color:#FFD700; font-weight:700;">$@_dogePrice.UsdPrice.ToString("F5")</MudText>
+                        </div>
+                    }
+                </MudItem>
+                <MudItem xs="12" sm="4" md="6" Class="d-flex align-center">
+                    <MudText Typo="Typo.caption" Class="dim-text">
+                        Revenue = block reward × blocks/day estimate × DOGE price.
+                        Actual earnings depend on pool luck and network difficulty.
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @* Table *@
+        <MudPaper Class="glass-card" Elevation="0">
+            <MudTable Items="@GetL7Profitability()" Dense="true" Hover="true"
+                      Breakpoint="Breakpoint.Sm" Style="background:transparent;">
+                <HeaderContent>
+                    <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem;">Model</MudTh>
+                    <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Hashrate</MudTh>
+                    <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Power</MudTh>
+                    <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Revenue 24h</MudTh>
+                    <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Profit 24h</MudTh>
+                    <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Break-even</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Style="font-size:0.85rem; font-weight:600;">@context.Model</MudTd>
+                    <MudTd Style="text-align:right; font-size:0.85rem;">@($"{context.HashrateGHs:F0} GH/s")</MudTd>
+                    <MudTd Style="text-align:right; font-size:0.85rem; color:var(--mud-palette-text-secondary);">@context.PowerWatts W</MudTd>
+                    <MudTd Style="text-align:right; font-size:0.85rem; font-weight:600; color:#FFD700;">
+                        @(context.Revenue24hUsd > 0 ? $"${context.Revenue24hUsd:F2}" : "–")
+                    </MudTd>
+                    <MudTd Style="@($"text-align:right; font-size:0.9rem; font-weight:700; color:{(context.Profit24hUsd >= 0 ? "#4caf50" : "#f44336")};")">
+                        @(context.Revenue24hUsd > 0 ? (context.Profit24hUsd >= 0 ? $"+${context.Profit24hUsd:F2}" : $"-${Math.Abs(context.Profit24hUsd):F2}") : "–")
+                    </MudTd>
+                    <MudTd Style="text-align:right; font-size:0.82rem; color:var(--mud-palette-text-secondary);">
+                        @(context.Revenue24hUsd > 0 ? $"{context.BreakevenKwh:F3} $/kWh" : "–")
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+        <MudText Typo="Typo.caption" Class="dim-text mt-2 d-block">
+            Profit = Revenue − (Power × 24h × $/kWh) · Network hashrate: @(_networkStats is not null ? $"{_networkStats.NetworkHashrate / 1_000_000_000_000.0:F2} TH/s" : "–")
+        </MudText>
+    </MudTabPanel>
+
 </MudTabs>
 
 @code {
@@ -893,6 +966,44 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
         var todayAll = _fullHistory.Where(h => h.Timestamp.ToLocalTime().Date == todayLocal).ToList();
         _todayPeak = todayAll.Count > 0 ? todayAll.Max(h => ToTeraHashPerSecond(h.Hashrate)) : 0;
+    }
+
+    // ── Profitability tab ────────────────────────────────────────────────────
+
+    private double _profPowerCost = 0.08;
+
+    private record L7Spec(string Model, int HashrateGHs, int PowerWatts);
+
+    private static readonly L7Spec[] _l7Specs =
+    [
+        new("Antminer L7 9500Mh",  9500, 3425),
+        new("Antminer L7 9300Mh",  9300, 3425),
+        new("Antminer L7 9160Mh",  9160, 3425),
+        new("Antminer L7 9050Mh",  9050, 3260),
+    ];
+
+    private record L7Row(string Model, int HashrateGHs, int PowerWatts,
+        double Revenue24hUsd, double Profit24hUsd, double BreakevenKwh);
+
+    private List<L7Row> GetL7Profitability()
+    {
+        // DOGE: ~10,000 DOGE block reward, ~1 block/min = 1440 blocks/day network-wide
+        // Miner share = minerHashrate / networkHashrate
+        const double dogePerBlock = 10_000.0;
+        const double blocksPerDay = 1440.0;
+        double networkGHs = _networkStats?.NetworkHashrate / 1_000_000_000.0 ?? 0;
+        double dogeUsd    = _dogePrice is not null ? (double)_dogePrice.UsdPrice : 0;
+
+        return _l7Specs.Select(s =>
+        {
+            double revenue = networkGHs > 0 && dogeUsd > 0
+                ? (s.HashrateGHs / networkGHs) * blocksPerDay * dogePerBlock * dogeUsd
+                : 0;
+            double powerCost = s.PowerWatts / 1000.0 * 24 * _profPowerCost;
+            double profit    = revenue > 0 ? revenue - powerCost : 0;
+            double breakeven = revenue > 0 ? revenue / (s.PowerWatts / 1000.0 * 24) : 0;
+            return new L7Row(s.Model, s.HashrateGHs, s.PowerWatts, revenue, profit, breakeven);
+        }).ToList();
     }
 
     private void BuildEpochChartData()

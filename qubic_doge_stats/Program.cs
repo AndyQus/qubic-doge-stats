@@ -75,6 +75,7 @@ builder.Services.AddHttpClient<MiningPoolRankingClient>(client =>
 
 builder.Services.AddHostedService<MiningPoolRankingWorker>();
 
+
 // CORS
 builder.Services.AddCors(options =>
 {

@@ -367,3 +367,11 @@ The database is persisted in a named Docker volume (`qubic_doge_data`).
 This application is in **beta**. All data is retrieved from public endpoints.
 Completeness, accuracy, and availability of the captured data are not guaranteed.
 Use it for demonstration and analysis purposes only.
+
+---
+
+## License
+
+The **Qubic Doge Stats** source code is licensed under the [AGPL-3.0 License](LICENSE). You may use our source code for what you need to do business.
+
+As this project interacts with the Qubic ecosystem, which uses parts from the **qubic-crypto** package for Qubic transaction signing and broadcasting, the **Anti-Military License** may also apply. See [https://github.com/computor-tools/qubic-crypto](https://github.com/computor-tools/qubic-crypto).

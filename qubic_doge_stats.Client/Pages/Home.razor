@@ -166,10 +166,10 @@
         <MudItem xs="12" sm="6" md="2">
             <StatCard Icon="@Icons.Material.Filled.Assignment"
                       Title="Tasks Distributed"
-                      Value="@_latest.TasksDistributed.ToString("N0")"
+                      Value="@(_currentEpochTasksDistributed > 0 ? _currentEpochTasksDistributed.ToString("N0") : "–")"
                       SecondaryValue="@(_peakTasksDistributed > 0 ? $"{_peakTasksDistributed:N0} · E{_peakTasksDistributedEpoch}" : "–")"
                       SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalTasksDistributed > 0 ? _totalTasksDistributed.ToString("N0") : "–")"
+                      TertiaryValue="@(_latest is not null && _latest.TasksDistributed > 0 ? _latest.TasksDistributed.ToString("N0") : "–")"
                       TertiaryLabel="Total"
                       Color="#4EE0FC"
                       Tooltip="Compute tasks distributed to miners. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
@@ -733,6 +733,7 @@ else
     private int _totalBlocksConfirmed;
     private int _currentEpochBlocksFound;
     private int _currentEpochBlocksConfirmed;
+    private int _currentEpochTasksDistributed;
     private int _totalSharesValid;
 
     // Epoch peak = highest single-epoch value ever recorded (with epoch number)
@@ -849,7 +850,8 @@ else
         _totalPoolRejected       = (at?.TotalPoolRejected       ?? 0) + (re?.TotalPoolRejected       ?? 0);
         _totalSolutionsAccepted  = (at?.TotalSolutionsAccepted  ?? 0) + (re?.TotalSolutionsAccepted  ?? 0);
         _totalSolutionsStale     = (at?.TotalSolutionsStale     ?? 0) + (re?.TotalSolutionsStale     ?? 0);
-        _totalTasksDistributed   = (at?.TotalTasksDistributed   ?? 0) + (re?.TotalTasksDistributed   ?? 0);
+        _totalTasksDistributed        = (at?.TotalTasksDistributed ?? 0) + (re?.TotalTasksDistributed ?? 0);
+        _currentEpochTasksDistributed = _latestEpochSummary?.TotalTasksDistributed ?? 0;
         _totalBlocksFound     = _recentBlocks.Count;
         _totalBlocksConfirmed = _recentBlocks.Count(b => b.Confirmed);
         _totalSharesValid     = (at?.TotalSharesValid ?? 0) + (re?.SharesValid ?? 0);

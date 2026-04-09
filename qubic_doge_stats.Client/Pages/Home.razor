@@ -508,7 +508,7 @@ else
                     {
                         <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Height).Take(5)" Dense="true" Hover="true"
                                   Style="background: transparent;" Class="pool-blocks-table"
-                                  GroupBy="@_blockGroupDef">
+                                  GroupBy="@_blockGroupDef" Breakpoint="Breakpoint.Sm">
                             <HeaderContent>
                                 <MudTh Style="color: #7e6fff;">Height</MudTh>
                                 <MudTh Style="color: #7e6fff;">Hash</MudTh>
@@ -523,22 +523,22 @@ else
                                 </MudTh>
                             </GroupHeaderTemplate>
                             <RowTemplate>
-                                <MudTd>
+                                <MudTd DataLabel="Height">
                                     <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
                                              Style="color: #4EE0FC;">@context.Height</MudLink>
                                 </MudTd>
-                                <MudTd>
+                                <MudTd DataLabel="Hash">
                                     <span style="font-family: monospace; font-size: 0.75rem; color: #4EE0FC;">
                                         @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 12 ? context.Hash[..8] + "…" + context.Hash[^4..] : context.Hash)
                                     </span>
                                 </MudTd>
-                                <MudTd Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("MM-dd HH:mm")</MudTd>
-                                <MudTd Style="color: #4caf50; font-size: 0.8rem;">
+                                <MudTd DataLabel="Time" Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("MM-dd HH:mm")</MudTd>
+                                <MudTd DataLabel="Reward (USD)" Style="color: #4caf50; font-size: 0.8rem;">
                                     @(context.DogePriceUsdAtFind > 0
                                         ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
                                         : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
                                 </MudTd>
-                                <MudTd>
+                                <MudTd DataLabel="Confirmations">
                                     @{ var conf = _networkStats?.BestBlockHeight > 0 && context.Height > 0
                                            ? _networkStats!.BestBlockHeight - context.Height + 1 : (long?)null; }
                                     @if (conf is null)
@@ -554,10 +554,10 @@ else
                                         <MudChip T="string" Size="Size.Small" Color="Color.Warning">@($"{conf:N0}")</MudChip>
                                     }
                                 </MudTd>
-                                <MudTd>
+                                <MudTd DataLabel="Verify">
                                     <MudLink Href="@($"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")" Target="_blank"
-                                             Style="color: #7e6fff; font-size: 0.75rem;">
-                                        <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1rem;" />
+                                             Style="color: #7e6fff;">
+                                        <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1.3rem;" />
                                     </MudLink>
                                 </MudTd>
                             </RowTemplate>
@@ -586,7 +586,8 @@ else
                 </div>
                 <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Height)" Dense="true" Hover="true"
                           Style="background: transparent;" @bind-RowsPerPage="_allBlocksPageSize"
-                          GroupBy="@_blockGroupDef" Filter="@(b => AllBlocksFilter(b))">
+                          GroupBy="@_blockGroupDef" Filter="@(b => AllBlocksFilter(b))"
+                          Breakpoint="Breakpoint.Sm">
                     <HeaderContent>
                         <MudTh Style="color: #7e6fff;">Height</MudTh>
                         <MudTh Style="color: #7e6fff;">Hash</MudTh>
@@ -602,28 +603,28 @@ else
                         </MudTh>
                     </GroupHeaderTemplate>
                     <RowTemplate>
-                        <MudTd>
+                        <MudTd DataLabel="Height">
                             <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
                                      Style="color: #4EE0FC;">@context.Height</MudLink>
                         </MudTd>
-                        <MudTd>
+                        <MudTd DataLabel="Hash">
                             <span style="font-family: monospace; font-size: 0.75rem; color: #4EE0FC;">
                                 @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 16 ? context.Hash[..12] + "…" + context.Hash[^4..] : context.Hash)
                             </span>
                         </MudTd>
-                        <MudTd>
+                        <MudTd DataLabel="Worker">
                             <MudLink Href="@($"https://dogechain.info/address/{context.Worker}")" Target="_blank"
                                      Style="color: #7e6fff; font-family: monospace; font-size: 0.75rem;">
                                 @(string.IsNullOrEmpty(context.Worker) ? "–" : context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
                             </MudLink>
                         </MudTd>
-                        <MudTd Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
-                        <MudTd Style="color: #4caf50; font-size: 0.8rem;">
+                        <MudTd DataLabel="Time" Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd DataLabel="Reward (USD)" Style="color: #4caf50; font-size: 0.8rem;">
                             @(context.DogePriceUsdAtFind > 0
                                 ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
                                 : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
                         </MudTd>
-                        <MudTd>
+                        <MudTd DataLabel="Confirmations">
                             @{ var confFull = _networkStats?.BestBlockHeight > 0 && context.Height > 0
                                    ? _networkStats!.BestBlockHeight - context.Height + 1 : (long?)null; }
                             @if (confFull is null)
@@ -639,10 +640,10 @@ else
                                 <MudChip T="string" Size="Size.Small" Color="Color.Warning">@($"{confFull:N0}")</MudChip>
                             }
                         </MudTd>
-                        <MudTd>
+                        <MudTd DataLabel="Verify">
                             <MudLink Href="@($"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")" Target="_blank"
                                      Style="color: #7e6fff;">
-                                <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1rem;" />
+                                <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1.3rem;" />
                             </MudLink>
                         </MudTd>
                     </RowTemplate>

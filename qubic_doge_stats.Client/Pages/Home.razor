@@ -66,16 +66,16 @@
                 @* Epoch peak *@
                 <div class="d-flex align-center gap-1 mt-1">
                     <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Best</MudText>
-                    <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakBlocksConfirmed > 0 ? $"{_peakBlocksConfirmed:N0} · E{_peakBlocksConfirmedEpoch}" : "–")</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakBlocksConfirmed > 0 ? _peakBlocksConfirmed.ToString("N0") : "–")</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_peakBlocksFound > 0 ? _peakBlocksFound.ToString("N0") : "–"))</MudText>
                     <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
-                    <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_peakBlocksFound > 0 ? $"{_peakBlocksFound:N0} · E{_peakBlocksFoundEpoch}" : "–"))</MudText>
+                    <MudText Typo="Typo.caption" Style="color:#4caf50;">E@(_peakBlocksFoundEpoch)</MudText>
                 </div>
                 @* Total *@
                 <div class="d-flex align-center gap-1 mt-1">
-                    <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Total</MudText>
-                    <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.65; font-weight:600;">@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")</MudText>
-                    <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
-                    <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.65; font-weight:600;">(@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : "–"))</MudText>
+                    <MudText Typo="Typo.body1" Style="color:#FF8C00; font-weight:700; min-width:3rem;">Total</MudText>
+                    <MudText Typo="Typo.body1" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")</MudText>
+                    <MudText Typo="Typo.body1" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : "–"))</MudText>
                 </div>
             </MudPaper>
         </MudItem>
@@ -244,7 +244,7 @@
                       Title="DOGE Price (USD)"
                       Value="@(_dogePrice is not null ? $"${_dogePrice.UsdPrice:F4}" : "–")"
                       Color="#FFD700"
-                      Tooltip="Current DOGE price in US Dollar (updated every 5 minutes via CoinGecko)." />
+                      Tooltip="Current DOGE price in US Dollar (updated hourly via CoinPaprika)." />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.MonetizationOn"
@@ -353,7 +353,7 @@ else
                         <MudText Typo="Typo.h6" Style="color: #7e6fff;">Today's Peak Hashrate (TH/s)</MudText>
                         <div class="d-flex flex-column align-end">
                             <MudText Typo="Typo.caption" Class="dim-text">
-                                @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by hour
+                                @DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy-MM-dd") · by 30 min
                             </MudText>
                             @if (_todayPeak > 0)
                             {
@@ -368,7 +368,7 @@ else
                         <MudChart ChartType="ChartType.Line"
                                   ChartSeries="@_todaySeries"
                                   ChartLabels="@_todayLabels"
-                                  Width="100%" Height="280px"
+                                  Width="100%" Height="320px"
                                   ChartOptions="@_chartOptions" />
                     }
                     else
@@ -1003,22 +1003,26 @@ _lastRefresh = DateTimeOffset.UtcNow;
         ).ToArray();
         _chartSeries = [new ChartSeries<double> { Name = "TH/s", Data = values, TooltipYValueFormat = "F2" }];
 
-        // Today chart: peak TH/s per hour bucket (00–23)
+        // Today chart: peak TH/s per 30-min bucket
         var todayLocal = DateTimeOffset.UtcNow.ToLocalTime().Date;
-        var byHour = _fullHistory
+        var nowLocal = DateTimeOffset.UtcNow.ToLocalTime();
+        int currentSlot = (int)((nowLocal - nowLocal.Date).TotalMinutes / 30);
+
+        var bySlot = _fullHistory
             .Where(h => h.Timestamp.ToLocalTime().Date == todayLocal)
-            .GroupBy(h => h.Timestamp.ToLocalTime().Hour)
+            .GroupBy(h => (int)(h.Timestamp.ToLocalTime().TimeOfDay.TotalMinutes / 30))
             .ToDictionary(g => g.Key, g => g.Max(x => ToTeraHashPerSecond(x.Hashrate)));
 
-        int currentHour = DateTimeOffset.UtcNow.ToLocalTime().Hour;
-        _todayLabels = Enumerable.Range(0, currentHour + 1).Select(h => $"{h:D2}").ToArray();
+        _todayLabels = Enumerable.Range(0, currentSlot + 1)
+            .Select(s => s % 2 == 0 ? $"{s / 2:D2}" : "")
+            .ToArray();
         _todaySeries =
         [
             new ChartSeries<double>
             {
-                Name = "TH/s",
-                Data = Enumerable.Range(0, currentHour + 1)
-                    .Select(h => byHour.TryGetValue(h, out var v) ? v : 0.0)
+                Name = "Peak TH/s",
+                Data = Enumerable.Range(0, currentSlot + 1)
+                    .Select(s => bySlot.TryGetValue(s, out var v) ? v : 0.0)
                     .ToArray(),
                 TooltipYValueFormat = "F2"
             }

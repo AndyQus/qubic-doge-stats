@@ -21,15 +21,15 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 - **DataBackfillService** — retroactively assigns correct Qubic epochs to historical snapshots on startup; configurable via `DataBackfill:Enabled`
 - Epoch comparison charts (hashrate, solutions & pool shares per epoch)
 - Current epoch timeline chart (day-by-day breakdown, avg hashrate per day)
-- Today's hashrate by hour
+- Today's hashrate chart — 30-min intervals, peak TH/s per slot
 - **Tooltips on all stat cards** — hover the info icon for an explanation of each metric
 - **Panel color scheme**: purple = mining performance, cyan = system status, gold = DOGE/finance, green = positive/confirmed, red = rejected, orange = stale
 - **Snackbar notification** when a new DOGE block is found — shows date & time, stays until dismissed
 - **Dogecoin Pool Dashboard** (tabbed on home page):
   - Live pool stats: blocks found/confirmed, shares valid/invalid, session uptime
   - Blocks per epoch bar chart
-  - Recent blocks table with links to Dogechain Explorer
-  - Full block history table
+  - **Recent Blocks** — latest 5 blocks, grouped by epoch, with Dogechain links
+  - **All Blocks** — pageable table (10/25/50/100 rows), grouped by epoch, live search by height/hash/worker/epoch
 - **Dark mode** by default (toggle available); iOS-style glassmorphism panels
 - Fully self-hosted via Docker
 

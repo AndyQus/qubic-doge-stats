@@ -503,11 +503,12 @@ else
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
-                    <MudText Typo="Typo.h6" Class="mb-3" Style="color: #7e6fff;">Recent Blocks</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-3" Style="color: #7e6fff;">Recent Blocks (Latest 5)</MudText>
                     @if (_recentBlocks.Count > 0)
                     {
-                        <MudTable Items="@_recentBlocks.Take(10)" Dense="true" Hover="true"
-                                  Style="background: transparent;" Class="pool-blocks-table">
+                        <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Height).Take(5)" Dense="true" Hover="true"
+                                  Style="background: transparent;" Class="pool-blocks-table"
+                                  GroupBy="@_blockGroupDef">
                             <HeaderContent>
                                 <MudTh Style="color: #7e6fff;">Height</MudTh>
                                 <MudTh Style="color: #7e6fff;">Hash</MudTh>
@@ -516,6 +517,11 @@ else
                                 <MudTh Style="color: #7e6fff;">Confirmations</MudTh>
                                 <MudTh Style="color: #7e6fff;">Verify</MudTh>
                             </HeaderContent>
+                            <GroupHeaderTemplate>
+                                <MudTh colspan="6" Style="background: rgba(78,224,252,0.10); padding: 4px 12px; border-left: 3px solid #4EE0FC;">
+                                    <MudText Typo="Typo.subtitle2" Style="color: #4EE0FC;">Epoch @context.Key</MudText>
+                                </MudTh>
+                            </GroupHeaderTemplate>
                             <RowTemplate>
                                 <MudTd>
                                     <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
@@ -568,22 +574,33 @@ else
         </MudGrid>
 
         @* Full Block History Table *@
-        @if (_recentBlocks.Count > 10)
+        @if (_recentBlocks.Count > 0)
         {
             <MudPaper Class="glass-card pa-4 mb-4" Elevation="0">
-                <MudText Typo="Typo.h6" Class="mb-3" Style="color: #7e6fff;">All Blocks (@_recentBlocks.Count total)</MudText>
-                <MudTable Items="@_recentBlocks" Dense="true" Hover="true" Style="background: transparent;"
-                          FixedHeader="true" Height="400px">
+                <div class="d-flex align-center justify-space-between mb-3">
+                    <MudText Typo="Typo.h6" Style="color: #7e6fff;">All Blocks (@_recentBlocks.Count total)</MudText>
+                    <MudTextField @bind-Value="_allBlocksSearch" Placeholder="Search height, hash, worker, epoch…"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Immediate="true" Clearable="true" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" Style="max-width: 320px; margin-left: auto;" />
+                </div>
+                <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Height)" Dense="true" Hover="true"
+                          Style="background: transparent;" @bind-RowsPerPage="_allBlocksPageSize"
+                          GroupBy="@_blockGroupDef" Filter="@(b => AllBlocksFilter(b))">
                     <HeaderContent>
                         <MudTh Style="color: #7e6fff;">Height</MudTh>
                         <MudTh Style="color: #7e6fff;">Hash</MudTh>
                         <MudTh Style="color: #7e6fff;">Worker</MudTh>
-                        <MudTh Style="color: #7e6fff;">Epoch</MudTh>
                         <MudTh Style="color: #7e6fff;">Time</MudTh>
                         <MudTh Style="color: #7e6fff;">Reward (USD)</MudTh>
                         <MudTh Style="color: #7e6fff;">Confirmations</MudTh>
                         <MudTh Style="color: #7e6fff;">Verify</MudTh>
                     </HeaderContent>
+                    <GroupHeaderTemplate>
+                        <MudTh colspan="7" Style="background: rgba(78,224,252,0.10); padding: 4px 12px; border-left: 3px solid #4EE0FC;">
+                            <MudText Typo="Typo.subtitle2" Style="color: #4EE0FC;">Epoch @context.Key</MudText>
+                        </MudTh>
+                    </GroupHeaderTemplate>
                     <RowTemplate>
                         <MudTd>
                             <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
@@ -600,7 +617,6 @@ else
                                 @(string.IsNullOrEmpty(context.Worker) ? "–" : context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
                             </MudLink>
                         </MudTd>
-                        <MudTd>Ep @context.QubicEpoch</MudTd>
                         <MudTd Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
                         <MudTd Style="color: #4caf50; font-size: 0.8rem;">
                             @(context.DogePriceUsdAtFind > 0
@@ -630,6 +646,9 @@ else
                             </MudLink>
                         </MudTd>
                     </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager PageSizeOptions="@(new int[] { 10, 25, 50, 100 })" />
+                    </PagerContent>
                 </MudTable>
             </MudPaper>
         }
@@ -763,6 +782,25 @@ else
     private bool _blockTrackingReady = false;
 
     // Pool-specific fields
+    private int _allBlocksPageSize = 10;
+    private string _allBlocksSearch = string.Empty;
+
+    private bool AllBlocksFilter(PoolBlock b)
+    {
+        if (string.IsNullOrWhiteSpace(_allBlocksSearch)) return true;
+        var s = _allBlocksSearch.Trim();
+        return b.Height.ToString().Contains(s, StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrEmpty(b.Hash) && b.Hash.Contains(s, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrEmpty(b.Worker) && b.Worker.Contains(s, StringComparison.OrdinalIgnoreCase))
+            || b.QubicEpoch.ToString().Contains(s, StringComparison.OrdinalIgnoreCase);
+    }
+    private readonly TableGroupDefinition<PoolBlock> _blockGroupDef = new()
+    {
+        GroupName = "Epoch",
+        Indentation = false,
+        Expandable = false,
+        Selector = b => b.QubicEpoch
+    };
     private List<PoolBlock> _recentBlocks = [];
     private List<ChartSeries<double>> _epochBlockSeries = [];
     private string[] _poolEpochLabels = [];

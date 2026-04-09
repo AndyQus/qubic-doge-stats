@@ -44,35 +44,45 @@ public class PoolPollingWorker : BackgroundService
 
             var currentEpoch = DogeStatsPollingWorker.CurrentEpoch;
 
-            foreach (var rb in response.RecentBlocks)
+            // Only persist blocks once the epoch is known — saves with epoch=0 would be
+            // invisible to GetBlocksFoundByEpoch() and corrupt epoch summaries.
+            // Blocks are deduplicated by Height so they will be picked up on the next poll.
+            if (currentEpoch > 0)
             {
-                db.UpsertPoolBlock(new PoolBlock
+                foreach (var rb in response.RecentBlocks)
                 {
-                    Height = rb.Height,
-                    Hash = rb.Hash,
-                    Worker = rb.Worker,
-                    Time = rb.Time,
-                    Confirmed = rb.Confirmed,
-                    QubicEpoch = currentEpoch,
-                    DogePriceUsdAtFind = currentPrice
-                });
-            }
+                    db.UpsertPoolBlock(new PoolBlock
+                    {
+                        Height = rb.Height,
+                        Hash = rb.Hash,
+                        Worker = rb.Worker,
+                        Time = rb.Time,
+                        Confirmed = rb.Confirmed,
+                        QubicEpoch = currentEpoch,
+                        DogePriceUsdAtFind = currentPrice
+                    });
+                }
 
-            // Fallback: recentBlocks can be empty if the block is older than the pool's sliding window.
-            // Use lastBlock to ensure it is always persisted (hash/worker will be empty until recentBlocks catches up).
-            if (response.LastBlock is { } lb &&
-                response.RecentBlocks.All(rb => rb.Height != lb.Height))
-            {
-                db.UpsertPoolBlock(new PoolBlock
+                // Fallback: recentBlocks can be empty if the block is older than the pool's sliding window.
+                // Use lastBlock to ensure it is always persisted (hash/worker will be empty until recentBlocks catches up).
+                if (response.LastBlock is { } lb &&
+                    response.RecentBlocks.All(rb => rb.Height != lb.Height))
                 {
-                    Height = lb.Height,
-                    Hash = "",
-                    Worker = "",
-                    Time = lb.Time,
-                    Confirmed = response.Blocks.Confirmed > 0,
-                    QubicEpoch = currentEpoch,
-                    DogePriceUsdAtFind = currentPrice
-                });
+                    db.UpsertPoolBlock(new PoolBlock
+                    {
+                        Height = lb.Height,
+                        Hash = "",
+                        Worker = "",
+                        Time = lb.Time,
+                        Confirmed = response.Blocks.Confirmed > 0,
+                        QubicEpoch = currentEpoch,
+                        DogePriceUsdAtFind = currentPrice
+                    });
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Epoch not yet initialized — skipping pool block DB write (will retry next poll)");
             }
 
             LatestStats = new PoolLiveStats

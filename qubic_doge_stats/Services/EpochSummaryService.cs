@@ -209,6 +209,7 @@ public class EpochSummaryService
             summary.AvgHashrateDisplay = FormatHashrate(avgHashrate);
             summary.EpochStart = snapshots.First().Timestamp;
             summary.EpochEnd = snapshots.Last().Timestamp;
+
             summary.IsFinalized = true;
 
             _db.UpsertEpochSummary(summary);
@@ -279,8 +280,6 @@ public class EpochSummaryService
         existing.TotalSolutionsAccepted += epoch.TotalSolutionsAccepted;
         existing.TotalSolutionsStale += epoch.TotalSolutionsStale;
         existing.TotalTasksDistributed += epoch.TotalTasksDistributed;
-        existing.TotalBlocksFound += epoch.BlocksFound;
-        existing.TotalBlocksConfirmed += epoch.BlocksConfirmed;
         existing.TotalSharesValid += epoch.SharesValid;
         existing.UpdatedAt = DateTimeOffset.UtcNow;
 

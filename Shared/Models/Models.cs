@@ -242,8 +242,6 @@ public class AllTimeStats
     public int TotalSolutionsAccepted { get; set; }
     public int TotalSolutionsStale { get; set; }
     public int TotalTasksDistributed { get; set; }
-    public int TotalBlocksFound { get; set; }
-    public int TotalBlocksConfirmed { get; set; }
     public int TotalSharesValid { get; set; }
 
     // Peak per-epoch counter values (highest single-epoch value ever recorded)

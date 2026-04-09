@@ -91,6 +91,9 @@ public class LiteDbContext : IDisposable
                 // Never overwrite a recorded price with zero
                 if (block.DogePriceUsdAtFind == 0 && existing.DogePriceUsdAtFind > 0)
                     block.DogePriceUsdAtFind = existing.DogePriceUsdAtFind;
+                // Never overwrite a valid epoch — once correctly set, epoch is immutable
+                if (existing.QubicEpoch > 0)
+                    block.QubicEpoch = existing.QubicEpoch;
                 col.Update(block);
             }
         }
@@ -313,8 +316,6 @@ public class LiteDbContext : IDisposable
             stats.TotalSolutionsAccepted += s.TotalSolutionsAccepted;
             stats.TotalSolutionsStale    += s.TotalSolutionsStale;
             stats.TotalTasksDistributed  += s.TotalTasksDistributed;
-            stats.TotalBlocksFound       += s.BlocksFound;
-            stats.TotalBlocksConfirmed   += s.BlocksConfirmed;
             stats.TotalSharesValid       += s.SharesValid;
 
             if (s.PeakHashrate > stats.PeakHashrate)

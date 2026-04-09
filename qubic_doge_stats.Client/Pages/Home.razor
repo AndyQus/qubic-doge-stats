@@ -54,18 +54,18 @@
                 <div class="d-flex align-center gap-2 mb-2">
                     <MudIcon Icon="@Icons.Material.Filled.Stars" Style="color:#4caf50; font-size:1.4rem;" />
                     <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">DOGE BLOCKS</MudText>
-                    <MudTooltip Text="Gold = Found, Green = Confirmed. Found: blocks discovered this session / epoch peak (highest single-epoch) / all-time. Confirmed: blocks confirmed on-chain." Placement="Placement.Top" Arrow="true">
+                    <MudTooltip Text="Gold = Found, Green = Confirmed. Row 1: current epoch. Row 2 (Best): epoch with the most blocks ever. Row 3 (Total): all-time sum across all epochs." Placement="Placement.Top" Arrow="true">
                         <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
                     </MudTooltip>
                 </div>
-                @* Live *@
+                @* Current epoch *@
                 <div class="d-flex gap-2 align-baseline mb-1">
-                    <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_poolStats?.BlocksConfirmed.ToString("N0") ?? "–")</MudText>
-                    <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">(@(_poolStats?.BlocksFound.ToString("N0") ?? "–"))</MudText>
+                    <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_currentEpochBlocksConfirmed > 0 ? _currentEpochBlocksConfirmed.ToString("N0") : "–")</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">(@(_currentEpochBlocksFound > 0 ? _currentEpochBlocksFound.ToString("N0") : "–"))</MudText>
                 </div>
                 @* Epoch peak *@
                 <div class="d-flex align-center gap-1 mt-1">
-                    <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Epoch</MudText>
+                    <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Best</MudText>
                     <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakBlocksConfirmed > 0 ? $"{_peakBlocksConfirmed:N0} · E{_peakBlocksConfirmedEpoch}" : "–")</MudText>
                     <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
                     <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_peakBlocksFound > 0 ? $"{_peakBlocksFound:N0} · E{_peakBlocksFoundEpoch}" : "–"))</MudText>
@@ -75,7 +75,7 @@
                     <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Total</MudText>
                     <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.65; font-weight:600;">@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")</MudText>
                     <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
-                    <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.65; font-weight:600;">(@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : _recentBlocks.Count.ToString("N0")))</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.65; font-weight:600;">(@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : "–"))</MudText>
                 </div>
             </MudPaper>
         </MudItem>
@@ -255,7 +255,7 @@
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
             @{
-                var totalBlocks = _totalBlocksFound > 0 ? _totalBlocksFound : _recentBlocks.Count;
+                var totalBlocks = _totalBlocksFound;
                 var historicalUsd = _recentBlocks.Where(b => b.DogePriceUsdAtFind > 0).Sum(b => b.DogePriceUsdAtFind * DogeBlockReward);
                 var currentUsd = _dogePrice is not null ? totalBlocks * DogeBlockReward * _dogePrice.UsdPrice : 0m;
             }
@@ -731,6 +731,8 @@ else
     private int _totalTasksDistributed;
     private int _totalBlocksFound;
     private int _totalBlocksConfirmed;
+    private int _currentEpochBlocksFound;
+    private int _currentEpochBlocksConfirmed;
     private int _totalSharesValid;
 
     // Epoch peak = highest single-epoch value ever recorded (with epoch number)
@@ -848,9 +850,26 @@ else
         _totalSolutionsAccepted  = (at?.TotalSolutionsAccepted  ?? 0) + (re?.TotalSolutionsAccepted  ?? 0);
         _totalSolutionsStale     = (at?.TotalSolutionsStale     ?? 0) + (re?.TotalSolutionsStale     ?? 0);
         _totalTasksDistributed   = (at?.TotalTasksDistributed   ?? 0) + (re?.TotalTasksDistributed   ?? 0);
-        _totalBlocksFound        = (at?.TotalBlocksFound        ?? 0) + (re?.BlocksFound             ?? 0);
-        _totalBlocksConfirmed    = (at?.TotalBlocksConfirmed    ?? 0) + (re?.BlocksConfirmed         ?? 0);
-        _totalSharesValid        = (at?.TotalSharesValid        ?? 0) + (re?.SharesValid             ?? 0);
+        _totalBlocksFound     = _recentBlocks.Count;
+        _totalBlocksConfirmed = _recentBlocks.Count(b => b.Confirmed);
+        _totalSharesValid     = (at?.TotalSharesValid ?? 0) + (re?.SharesValid ?? 0);
+
+        // Current epoch — direct count from pool_blocks
+        var curEpoch = _latest?.QubicEpoch ?? 0;
+        _currentEpochBlocksFound     = curEpoch > 0 ? _recentBlocks.Count(b => b.QubicEpoch == curEpoch) : 0;
+        _currentEpochBlocksConfirmed = curEpoch > 0 ? _recentBlocks.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0;
+
+        // Best epoch — group pool_blocks by epoch, find epoch with most blocks
+        var epochGroups = _recentBlocks.Where(b => b.QubicEpoch > 0).GroupBy(b => b.QubicEpoch).ToList();
+        if (epochGroups.Count > 0)
+        {
+            var bestFound     = epochGroups.MaxBy(g => g.Count())!;
+            var bestConfirmed = epochGroups.MaxBy(g => g.Count(b => b.Confirmed))!;
+            _peakBlocksFound          = bestFound.Count();
+            _peakBlocksFoundEpoch     = bestFound.Key;
+            _peakBlocksConfirmed      = bestConfirmed.Count(b => b.Confirmed);
+            _peakBlocksConfirmedEpoch = bestConfirmed.Key;
+        }
 
         // Epoch peak = highest single-epoch value ever; running epoch competes with finalized peaks
         int reEp = re?.EpochNumber ?? 0;
@@ -859,8 +878,6 @@ else
         (_peakSolutionsAccepted, _peakSolutionsAcceptedEpoch) = Peak(at?.PeakSolutionsAccepted ?? 0, at?.PeakSolutionsAcceptedEpoch ?? 0, re?.TotalSolutionsAccepted, reEp);
         (_peakSolutionsStale,    _peakSolutionsStaleEpoch)    = Peak(at?.PeakSolutionsStale    ?? 0, at?.PeakSolutionsStaleEpoch    ?? 0, re?.TotalSolutionsStale,    reEp);
         (_peakTasksDistributed,  _peakTasksDistributedEpoch)  = Peak(at?.PeakTasksDistributed  ?? 0, at?.PeakTasksDistributedEpoch  ?? 0, re?.TotalTasksDistributed,  reEp);
-        (_peakBlocksFound,       _peakBlocksFoundEpoch)       = Peak(at?.PeakBlocksFound       ?? 0, at?.PeakBlocksFoundEpoch       ?? 0, re?.BlocksFound,            reEp);
-        (_peakBlocksConfirmed,   _peakBlocksConfirmedEpoch)   = Peak(at?.PeakBlocksConfirmed   ?? 0, at?.PeakBlocksConfirmedEpoch   ?? 0, re?.BlocksConfirmed,        reEp);
         (_peakSharesValid,       _peakSharesValidEpoch)       = Peak(at?.PeakSharesValid        ?? 0, at?.PeakSharesValidEpoch        ?? 0, re?.SharesValid,            reEp);
 
         NotifyNewBlocks();

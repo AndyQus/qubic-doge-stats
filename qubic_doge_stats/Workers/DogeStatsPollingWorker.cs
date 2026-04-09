@@ -19,6 +19,7 @@ public class DogeStatsPollingWorker : BackgroundService
     public static int CurrentEpoch => _sharedEpoch;
     private static int _sharedEpoch = 0;
 
+
     public DogeStatsPollingWorker(IServiceProvider services, ILogger<DogeStatsPollingWorker> logger, IConfiguration config)
     {
         _services = services;
@@ -69,6 +70,7 @@ public class DogeStatsPollingWorker : BackgroundService
                     _sharedEpoch = newEpoch;
                     _epochFetchedAt = DateTimeOffset.UtcNow;
                     _logger.LogDebug("Epoch refreshed: {Epoch}", _cachedEpoch);
+
                 }
             }
 

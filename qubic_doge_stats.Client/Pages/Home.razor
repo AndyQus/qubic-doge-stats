@@ -751,6 +751,7 @@ else
     private DogeNetworkStats? _networkStats;
     private DogePriceStats? _dogePrice;
     private EpochSummary? _latestEpochSummary;
+    private List<EpochSummary> _allEpochSummaries = [];
     private AllTimeStats? _allTimeStats;
     private MiningPoolRanking? _miningPoolRanking;
     private List<HashrateSnapshot> _history = [];
@@ -837,6 +838,7 @@ else
         _dogePrice = await Api.GetDogePriceAsync();
         _recentBlocks = await Api.GetPoolBlocksAsync();
         _latestEpochSummary = await Api.GetLatestEpochSummaryAsync();
+        _allEpochSummaries  = await Api.GetAllEpochSummariesAsync();
         _allTimeStats = await Api.GetAllTimeStatsAsync();
         _miningPoolRanking = await Api.GetMiningPoolRankingAsync();
 
@@ -1028,23 +1030,27 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
     private void BuildEpochChartData()
     {
-        var epochs = _fullHistory
-            .Where(h => h.QubicEpoch > 0)
-            .GroupBy(h => h.QubicEpoch)
-            .OrderBy(g => g.Key)
+        var summaries = _allEpochSummaries
+            .Where(s => s.EpochNumber > 0)
+            .OrderBy(s => s.EpochNumber)
             .ToList();
 
-        if (epochs.Count == 0) return;
+        if (summaries.Count == 0) return;
 
-        _epochLabels = epochs.Select(g => $"Ep {g.Key}").ToArray();
+        // SolutionsRejected is not stored in EpochSummary — compute from raw history where available
+        var rejectedByEpoch = _fullHistory
+            .Where(h => h.QubicEpoch > 0)
+            .GroupBy(h => h.QubicEpoch)
+            .ToDictionary(g => g.Key, g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.SolutionsRejected));
 
-        var epochHashData = epochs.Select(g => g.Average(x => ToTeraHashPerSecond(x.Hashrate))).ToArray();
+        _epochLabels = summaries.Select(s => $"Ep {s.EpochNumber}").ToArray();
+
         _epochHashrateSeries =
         [
             new ChartSeries<double>
             {
                 Name = "Avg TH/s",
-                Data = epochHashData,
+                Data = summaries.Select(s => ToTeraHashPerSecond(s.AvgHashrate)).ToArray(),
                 TooltipYValueFormat = "F2"
             }
         ];
@@ -1054,19 +1060,19 @@ _lastRefresh = DateTimeOffset.UtcNow;
             new ChartSeries<double>
             {
                 Name = "Accepted",
-                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.SolutionsAccepted)).ToArray(),
+                Data = summaries.Select(s => (double)s.TotalSolutionsAccepted).ToArray(),
                 TooltipYValueFormat = "F0"
             },
             new ChartSeries<double>
             {
                 Name = "Rejected",
-                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.SolutionsRejected)).ToArray(),
+                Data = summaries.Select(s => rejectedByEpoch.GetValueOrDefault(s.EpochNumber, 0)).ToArray(),
                 TooltipYValueFormat = "F0"
             },
             new ChartSeries<double>
             {
                 Name = "Stale",
-                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.SolutionsStale)).ToArray(),
+                Data = summaries.Select(s => (double)s.TotalSolutionsStale).ToArray(),
                 TooltipYValueFormat = "F0"
             }
         ];
@@ -1076,13 +1082,13 @@ _lastRefresh = DateTimeOffset.UtcNow;
             new ChartSeries<double>
             {
                 Name = "Accepted",
-                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.PoolAccepted)).ToArray(),
+                Data = summaries.Select(s => (double)s.TotalPoolAccepted).ToArray(),
                 TooltipYValueFormat = "F0"
             },
             new ChartSeries<double>
             {
                 Name = "Rejected",
-                Data = epochs.Select(g => (double)SumPositiveIncrements(g.OrderBy(x => x.Timestamp), x => x.PoolRejected)).ToArray(),
+                Data = summaries.Select(s => (double)s.TotalPoolRejected).ToArray(),
                 TooltipYValueFormat = "F0"
             }
         ];

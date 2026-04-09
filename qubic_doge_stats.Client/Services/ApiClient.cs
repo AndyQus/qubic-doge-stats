@@ -51,6 +51,12 @@ public class ApiClient
         catch { return null; }
     }
 
+    public async Task<List<EpochSummary>> GetAllEpochSummariesAsync()
+    {
+        try { return await _http.GetFromJsonAsync<List<EpochSummary>>("/api/epochs/all") ?? []; }
+        catch { return []; }
+    }
+
     public async Task<AllTimeStats?> GetAllTimeStatsAsync()
     {
         try { return await _http.GetFromJsonAsync<AllTimeStats>("/api/stats/alltime"); }

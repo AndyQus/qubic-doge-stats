@@ -177,10 +177,10 @@
         <MudItem xs="12" sm="6" md="2">
             <StatCard Icon="@Icons.Material.Filled.TaskAlt"
                       Title="Solutions Accepted"
-                      Value="@_latest.SolutionsAccepted.ToString("N0")"
+                      Value="@(_latestEpochSummary is not null && _latestEpochSummary.TotalSolutionsAccepted > 0 ? _latestEpochSummary.TotalSolutionsAccepted.ToString("N0") : "–")"
                       SecondaryValue="@(_peakSolutionsAccepted > 0 ? $"{_peakSolutionsAccepted:N0} · E{_peakSolutionsAcceptedEpoch}" : "–")"
                       SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalSolutionsAccepted > 0 ? _totalSolutionsAccepted.ToString("N0") : "–")"
+                      TertiaryValue="@(_latest is not null && _latest.SolutionsAccepted > 0 ? _latest.SolutionsAccepted.ToString("N0") : "–")"
                       TertiaryLabel="Total"
                       Color="#4caf50"
                       Tooltip="Solutions accepted by the Qubic network. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
@@ -188,10 +188,10 @@
         <MudItem xs="12" sm="6" md="2">
             <StatCard Icon="@Icons.Material.Filled.ContentPaste"
                       Title="Solutions Stale"
-                      Value="@_latest.SolutionsStale.ToString("N0")"
+                      Value="@(_latestEpochSummary is not null && _latestEpochSummary.TotalSolutionsStale > 0 ? _latestEpochSummary.TotalSolutionsStale.ToString("N0") : "–")"
                       SecondaryValue="@(_peakSolutionsStale > 0 ? $"{_peakSolutionsStale:N0} · E{_peakSolutionsStaleEpoch}" : "–")"
                       SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalSolutionsStale > 0 ? _totalSolutionsStale.ToString("N0") : "–")"
+                      TertiaryValue="@(_latest is not null && _latest.SolutionsStale > 0 ? _latest.SolutionsStale.ToString("N0") : "–")"
                       TertiaryLabel="Total"
                       Color="#ff9800"
                       Tooltip="Stale solutions — submitted after the tick expired. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
@@ -199,10 +199,10 @@
         <MudItem xs="12" sm="6" md="2">
             <StatCard Icon="@Icons.Material.Filled.CheckCircle"
                       Title="Pool Accepted"
-                      Value="@_latest.PoolAccepted.ToString("N0")"
+                      Value="@(_latestEpochSummary is not null && _latestEpochSummary.TotalPoolAccepted > 0 ? _latestEpochSummary.TotalPoolAccepted.ToString("N0") : "–")"
                       SecondaryValue="@(_peakPoolAccepted > 0 ? $"{_peakPoolAccepted:N0} · E{_peakPoolAcceptedEpoch}" : "–")"
                       SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalPoolAccepted > 0 ? _totalPoolAccepted.ToString("N0") : "–")"
+                      TertiaryValue="@(_latest is not null && _latest.PoolAccepted > 0 ? _latest.PoolAccepted.ToString("N0") : "–")"
                       TertiaryLabel="Total"
                       Color="#4caf50"
                       Tooltip="Shares accepted by the pool. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
@@ -210,10 +210,10 @@
         <MudItem xs="12" sm="6" md="2">
             <StatCard Icon="@Icons.Material.Filled.Error"
                       Title="Pool Rejected"
-                      Value="@_latest.PoolRejected.ToString("N0")"
+                      Value="@(_latestEpochSummary is not null && _latestEpochSummary.TotalPoolRejected > 0 ? _latestEpochSummary.TotalPoolRejected.ToString("N0") : "–")"
                       SecondaryValue="@(_peakPoolRejected > 0 ? $"{_peakPoolRejected:N0} · E{_peakPoolRejectedEpoch}" : "–")"
                       SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalPoolRejected > 0 ? _totalPoolRejected.ToString("N0") : "–")"
+                      TertiaryValue="@(_latest is not null && _latest.PoolRejected > 0 ? _latest.PoolRejected.ToString("N0") : "–")"
                       TertiaryLabel="Total"
                       Color="#f44336"
                       Tooltip="Shares rejected by the pool. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />
@@ -221,10 +221,10 @@
         <MudItem xs="12" sm="6" md="2">
             <StatCard Icon="@Icons.Material.Filled.CheckCircle"
                       Title="Pool Shares Valid"
-                      Value="@(_poolStats?.SharesValid.ToString("N0") ?? "–")"
+                      Value="@(_latestEpochSummary is not null && _latestEpochSummary.SharesValid > 0 ? _latestEpochSummary.SharesValid.ToString("N0") : "–")"
                       SecondaryValue="@(_peakSharesValid > 0 ? $"{_peakSharesValid:N0} · E{_peakSharesValidEpoch}" : "–")"
                       SecondaryLabel="Epoch"
-                      TertiaryValue="@(_totalSharesValid > 0 ? _totalSharesValid.ToString("N0") : "–")"
+                      TertiaryValue="@(_poolStats is not null && _poolStats.SharesValid > 0 ? _poolStats.SharesValid.ToString("N0") : "–")"
                       TertiaryLabel="Total"
                       Color="#4caf50"
                       Tooltip="Valid shares. Session: current pool session. Epoch: highest single-epoch value (with epoch number). Total: all-time sum." />

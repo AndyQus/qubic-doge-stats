@@ -24,7 +24,7 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 - Today's hashrate chart — 30-min intervals, peak TH/s per slot
 - **Tooltips on all stat cards** — hover the info icon for an explanation of each metric
 - **Panel color scheme**: purple = mining performance, cyan = system status, gold = DOGE/finance, green = positive/confirmed, red = rejected, orange = stale
-- **Snackbar notification** when a new DOGE block is found — shows date & time, stays until dismissed
+- **Snackbar notifications** for new DOGE block finds — shows time, stays until dismissed (max 5 visible); on revisit, new blocks since last visit are shown individually (up to 5) or as a summary count; last seen block height is persisted in browser `localStorage`
 - **Dogecoin Pool Dashboard** (tabbed on home page):
   - Live pool stats: blocks found/confirmed, shares valid/invalid, session uptime
   - Blocks per epoch bar chart

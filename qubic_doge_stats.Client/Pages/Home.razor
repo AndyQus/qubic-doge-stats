@@ -135,6 +135,19 @@
 
         @* ── Zeile 2: Systeminformationen ── *@
         <MudItem xs="12" sm="6" md="3">
+            @{ var _lastFoundBlock = _recentBlocks.Count > 0 ? _recentBlocks.OrderByDescending(b => b.Time).First() : null; }
+            <StatCard Icon="@Icons.Material.Filled.AvTimer"
+                      Title="Avg Block Interval"
+                      Value="@(_lastFoundBlock is not null ? FormatUptimeSpan(DateTimeOffset.UtcNow - _lastFoundBlock.Time) : "–")"
+                      ValueLabel="since last"
+                      SecondaryValue="@(_avgBlockIntervalEpoch.HasValue ? FormatUptimeSpan(_avgBlockIntervalEpoch.Value) : "–")"
+                      SecondaryLabel="Epoch"
+                      TertiaryValue="@(_avgBlockIntervalAll.HasValue ? FormatUptimeSpan(_avgBlockIntervalAll.Value) : "–")"
+                      TertiaryLabel="All-time"
+                      Color="#FFD700"
+                      Tooltip="Time since the last block was found (live). Epoch: average interval between blocks in the current epoch. All-time: average over all blocks ever found." />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
             <StatCard Icon="@Icons.Material.Filled.LayersClear"
                       Title="Current Epoch"
                       Value="@(_latest.QubicEpoch > 0 ? _latest.QubicEpoch.ToString() : "–")"
@@ -333,11 +346,13 @@ else
                     </div>
                     @if (_history.Count > 1)
                     {
-                        <MudChart ChartType="ChartType.Line"
-                                  ChartSeries="@_chartSeries"
-                                  ChartLabels="@_chartLabels"
-                                  Width="100%" Height="280px"
-                                  ChartOptions="@_chartOptions" />
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_chartSeries, _chartLabels)">
+                            <MudChart ChartType="ChartType.Line"
+                                      ChartSeries="@_chartSeries"
+                                      ChartLabels="@_chartLabels"
+                                      Width="100%" Height="280px"
+                                      ChartOptions="@_chartOptions" />
+                        </div>
                     }
                     else
                     {
@@ -366,11 +381,13 @@ else
                     </div>
                     @if (_todaySeries.Count > 0)
                     {
-                        <MudChart ChartType="ChartType.Line"
-                                  ChartSeries="@_todaySeries"
-                                  ChartLabels="@_todayLabels"
-                                  Width="100%" Height="320px"
-                                  ChartOptions="@_chartOptions" />
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_todaySeries, _todayLabels)">
+                            <MudChart ChartType="ChartType.Line"
+                                      ChartSeries="@_todaySeries"
+                                      ChartLabels="@_todayLabels"
+                                      Width="100%" Height="320px"
+                                      ChartOptions="@_chartOptions" />
+                        </div>
                     }
                     else
                     {
@@ -395,11 +412,13 @@ else
                     </MudText>
                     @if (_epochTimelineSeries.Count > 0)
                     {
-                        <MudChart ChartType="ChartType.Line"
-                                  ChartSeries="@_epochTimelineSeries"
-                                  ChartLabels="@_epochTimelineLabels"
-                                  Width="100%" Height="260px"
-                                  ChartOptions="@_chartOptions" />
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochTimelineSeries, _epochTimelineLabels)">
+                            <MudChart ChartType="ChartType.Line"
+                                      ChartSeries="@_epochTimelineSeries"
+                                      ChartLabels="@_epochTimelineLabels"
+                                      Width="100%" Height="260px"
+                                      ChartOptions="@_chartOptions" />
+                        </div>
                     }
                     else
                     {
@@ -416,11 +435,13 @@ else
                     <MudText Typo="Typo.caption" Class="mb-3 dim-text">Mean TH/s over all recorded snapshots per epoch</MudText>
                     @if (_epochHashrateSeries.Count > 0)
                     {
-                        <MudChart ChartType="ChartType.Bar"
-                                  ChartSeries="@_epochHashrateSeries"
-                                  ChartLabels="@_epochLabels"
-                                  Width="100%" Height="260px"
-                                  ChartOptions="@_epochHashrateChartOptions" />
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochHashrateSeries, _epochLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_epochHashrateSeries"
+                                      ChartLabels="@_epochLabels"
+                                      Width="100%" Height="260px"
+                                      ChartOptions="@_epochHashrateChartOptions" />
+                        </div>
                     }
                     else
                     {
@@ -440,11 +461,13 @@ else
                     <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted, rejected and stale solutions per epoch</MudText>
                     @if (_epochSolutionsDetailSeries.Count > 0)
                     {
-                        <MudChart ChartType="ChartType.Bar"
-                                  ChartSeries="@_epochSolutionsDetailSeries"
-                                  ChartLabels="@_epochLabels"
-                                  Width="100%" Height="260px"
-                                  ChartOptions="@_epochCounterChartOptions" />
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochSolutionsDetailSeries, _epochLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_epochSolutionsDetailSeries"
+                                      ChartLabels="@_epochLabels"
+                                      Width="100%" Height="260px"
+                                      ChartOptions="@_epochCounterChartOptions" />
+                        </div>
                     }
                     else
                     {
@@ -460,11 +483,13 @@ else
                     <MudText Typo="Typo.caption" Class="mb-3 dim-text">Accepted vs. rejected pool shares per epoch</MudText>
                     @if (_epochPoolSeries.Count > 0)
                     {
-                        <MudChart ChartType="ChartType.Bar"
-                                  ChartSeries="@_epochPoolSeries"
-                                  ChartLabels="@_epochLabels"
-                                  Width="100%" Height="260px"
-                                  ChartOptions="@_epochCounterChartOptions" />
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochPoolSeries, _epochLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_epochPoolSeries"
+                                      ChartLabels="@_epochLabels"
+                                      Width="100%" Height="260px"
+                                      ChartOptions="@_epochCounterChartOptions" />
+                        </div>
                     }
                     else
                     {
@@ -487,11 +512,13 @@ else
                     <MudText Typo="Typo.caption" Class="mb-3 dim-text">Found and confirmed blocks per Qubic epoch</MudText>
                     @if (_epochBlockSeries.Count > 0)
                     {
-                        <MudChart ChartType="ChartType.Bar"
-                                  ChartSeries="@_epochBlockSeries"
-                                  ChartLabels="@_poolEpochLabels"
-                                  Width="100%" Height="260px"
-                                  ChartOptions="@_poolChartOptions" />
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochBlockSeries, _poolEpochLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_epochBlockSeries"
+                                      ChartLabels="@_poolEpochLabels"
+                                      Width="100%" Height="260px"
+                                      ChartOptions="@_poolChartOptions" />
+                        </div>
                     }
                     else
                     {
@@ -573,37 +600,6 @@ else
                 </MudPaper>
             </MudItem>
         </MudGrid>
-
-        @* Block Interval Summary *@
-        @if (_recentBlocks.Count >= 2)
-        {
-            <MudPaper Class="glass-card pa-3 mb-3" Elevation="0">
-                <div class="d-flex align-center gap-2 mb-2">
-                    <MudIcon Icon="@Icons.Material.Filled.AvTimer" Style="color:#7e6fff; font-size:1.2rem;" />
-                    <MudText Style="font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:0.75rem; color:var(--mud-palette-text-secondary);">Avg Time Between Blocks</MudText>
-                    <MudTooltip Text="Average interval between consecutive DOGE blocks found by this pool. Calculated from block timestamps." Placement="Placement.Top" Arrow="true">
-                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help;" />
-                    </MudTooltip>
-                </div>
-                <div class="d-flex flex-wrap gap-4">
-                    <div>
-                        <MudText Typo="Typo.caption" Class="dim-text">All-time</MudText>
-                        <MudText Typo="Typo.body1" Style="color:#7e6fff; font-weight:700;">@(_avgBlockIntervalAll.HasValue ? FormatUptimeSpan(_avgBlockIntervalAll.Value) : "–")</MudText>
-                    </div>
-                    <div>
-                        <MudText Typo="Typo.caption" Class="dim-text">Current Epoch</MudText>
-                        <MudText Typo="Typo.body1" Style="color:#4EE0FC; font-weight:700;">@(_avgBlockIntervalEpoch.HasValue ? FormatUptimeSpan(_avgBlockIntervalEpoch.Value) : "–")</MudText>
-                    </div>
-                    <div>
-                        <MudText Typo="Typo.caption" Class="dim-text">Since Last Block</MudText>
-                        <MudText Typo="Typo.body1" Style="color:#FFD700; font-weight:700;">
-                            @{ var lastB = _recentBlocks.OrderByDescending(b => b.Time).FirstOrDefault(); }
-                            @(lastB is not null ? FormatUptimeSpan(DateTimeOffset.UtcNow - lastB.Time) : "–")
-                        </MudText>
-                    </div>
-                </div>
-            </MudPaper>
-        }
 
         @* Per-Worker Block Stats *@
         @if (_workerBlockStats.Count > 0)
@@ -785,16 +781,16 @@ else
                     <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Break-even</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd Style="font-size:0.85rem; font-weight:600;">@context.Model</MudTd>
-                    <MudTd Style="text-align:right; font-size:0.85rem;">@($"{context.HashrateGHs / 1000.0:F2} GH/s")</MudTd>
-                    <MudTd Style="text-align:right; font-size:0.85rem; color:var(--mud-palette-text-secondary);">@context.PowerWatts W</MudTd>
-                    <MudTd Style="text-align:right; font-size:0.85rem; font-weight:600; color:#FFD700;">
+                    <MudTd DataLabel="Model" Style="font-size:0.85rem; font-weight:600;">@context.Model</MudTd>
+                    <MudTd DataLabel="Hashrate" Style="text-align:right; font-size:0.85rem;">@($"{context.HashrateGHs / 1000.0:F2} GH/s")</MudTd>
+                    <MudTd DataLabel="Power" Style="text-align:right; font-size:0.85rem; color:var(--mud-palette-text-secondary);">@context.PowerWatts W</MudTd>
+                    <MudTd DataLabel="Revenue 24h" Style="text-align:right; font-size:0.85rem; font-weight:600; color:#FFD700;">
                         @(context.Revenue24hUsd > 0 ? $"${context.Revenue24hUsd:F2}" : "–")
                     </MudTd>
-                    <MudTd Style="@($"text-align:right; font-size:0.9rem; font-weight:700; color:{(context.Profit24hUsd >= 0 ? "#4caf50" : "#f44336")};")">
+                    <MudTd DataLabel="Profit 24h" Style="@($"text-align:right; font-size:0.9rem; font-weight:700; color:{(context.Profit24hUsd >= 0 ? "#4caf50" : "#f44336")};")">
                         @(context.Revenue24hUsd > 0 ? (context.Profit24hUsd >= 0 ? $"+${context.Profit24hUsd:F2}" : $"-${Math.Abs(context.Profit24hUsd):F2}") : "–")
                     </MudTd>
-                    <MudTd Style="text-align:right; font-size:0.82rem; color:var(--mud-palette-text-secondary);">
+                    <MudTd DataLabel="Break-even" Style="text-align:right; font-size:0.82rem; color:var(--mud-palette-text-secondary);">
                         @(context.Revenue24hUsd > 0 ? $"{context.BreakevenKwh:F3} $/kWh" : "–")
                     </MudTd>
                 </RowTemplate>
@@ -899,7 +895,7 @@ else
     {
         YAxisTicks = 1,
         MaxNumYAxisTicks = 10,
-        YAxisFormat = "F2",
+        YAxisFormat = "F0",
         LineStrokeWidth = 2,
         ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
     };
@@ -918,7 +914,7 @@ else
     {
         YAxisTicks = 1,
         MaxNumYAxisTicks = 10,
-        YAxisFormat = "F2",
+        YAxisFormat = "F0",
         ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
     };
 
@@ -938,6 +934,7 @@ else
         Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
         Snackbar.Configuration.PreventDuplicates = false;
         Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+        Snackbar.Configuration.NewestOnTop = true;
         await RefreshDataAsync();
         _refreshTimer = new System.Threading.Timer(async _ =>
         {
@@ -1017,39 +1014,40 @@ _lastRefresh = DateTimeOffset.UtcNow;
     {
         if (!_blockTrackingReady)
         {
-            // First load — compare against localStorage to decide what to show
+            // First load — read last known block height from localStorage
             var stored = await JS.InvokeAsync<string?>("localStorage.getItem", BlockLocalStorageKey);
-            HashSet<long> seenHeights = [];
+            long lastSeenHeight = 0;
             if (!string.IsNullOrEmpty(stored))
-            {
-                try { seenHeights = System.Text.Json.JsonSerializer.Deserialize<HashSet<long>>(stored) ?? []; }
-                catch { seenHeights = []; }
-            }
+                long.TryParse(stored, out lastSeenHeight);
 
             var sortedDesc = _recentBlocks.OrderByDescending(b => b.Height).ToList();
-            List<PoolBlock> toNotify;
+            var maxHeight = sortedDesc.FirstOrDefault()?.Height ?? 0;
 
-            if (seenHeights.Count == 0)
+            if (lastSeenHeight > 0)
             {
-                // First ever visit: show last 3
-                toNotify = sortedDesc.Take(3).OrderBy(b => b.Height).ToList();
+                var newBlocks = sortedDesc.Where(b => b.Height > lastSeenHeight).OrderBy(b => b.Height).ToList();
+                if (newBlocks.Count > 5)
+                {
+                    Snackbar.Add(
+                        $"🐕 {newBlocks.Count} new blocks found since your last visit!",
+                        Severity.Info,
+                        config =>
+                        {
+                            config.VisibleStateDuration = 90 * 60 * 1000;
+                            config.ShowCloseIcon = true;
+                        });
+                }
+                else
+                {
+                    foreach (var block in newBlocks)
+                        ShowBlockSnackbar(block);
+                }
             }
-            else
-            {
-                var newBlocks = sortedDesc.Where(b => !seenHeights.Contains(b.Height)).OrderBy(b => b.Height).ToList();
-                // Gap > 5: too many missed, clear and show last 3
-                toNotify = newBlocks.Count > 5
-                    ? sortedDesc.Take(3).OrderBy(b => b.Height).ToList()
-                    : newBlocks;
-            }
+            // else: first ever visit — show nothing, just seed
 
-            foreach (var block in toNotify)
-                ShowBlockSnackbar(block);
-
-            // Persist current block heights
-            var allHeights = _recentBlocks.Select(b => b.Height).ToList();
-            await JS.InvokeVoidAsync("localStorage.setItem", BlockLocalStorageKey,
-                System.Text.Json.JsonSerializer.Serialize(allHeights));
+            // Persist only the highest known block height
+            if (maxHeight > 0)
+                await JS.InvokeVoidAsync("localStorage.setItem", BlockLocalStorageKey, maxHeight.ToString());
 
             _knownBlockHashes = _recentBlocks.Select(b => b.Hash).ToHashSet();
             _blockTrackingReady = true;
@@ -1066,9 +1064,8 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
         if (newDuringRefresh.Count > 0)
         {
-            var allHeights = _recentBlocks.Select(b => b.Height).ToList();
-            await JS.InvokeVoidAsync("localStorage.setItem", BlockLocalStorageKey,
-                System.Text.Json.JsonSerializer.Serialize(allHeights));
+            var maxH = _recentBlocks.Max(b => b.Height);
+            await JS.InvokeVoidAsync("localStorage.setItem", BlockLocalStorageKey, maxH.ToString());
         }
     }
 
@@ -1308,6 +1305,26 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
         int startDow = (int)actualStart.DayOfWeek;
         _epochTimelineLabels = byDay.Select(g => allDays[(startDow + g.Key) % 7]).ToArray();
+    }
+
+    private static string ChartWrapperStyle(List<ChartSeries<double>> series, string[] labels)
+    {
+        // Y-axis: character count of longest value
+        double max = series.SelectMany(s => s.Data.Values).DefaultIfEmpty(0).Max();
+        int yChars = ((int)Math.Ceiling(max)).ToString().Length;
+
+        // X-axis: font size based on number of visible (non-empty) labels
+        int visibleLabels = labels.Count(l => !string.IsNullOrEmpty(l));
+        double xFontRem = visibleLabels switch
+        {
+            <= 8  => 1.26,
+            <= 12 => 1.05,
+            <= 18 => 0.88,
+            <= 25 => 0.75,
+            _     => 0.65
+        };
+
+        return $"--yaxis-chars: {yChars}; --xaxis-font-size: {xFontRem.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)}rem;";
     }
 
     private static DateTime GetEpochStart(DateTime utcTime)

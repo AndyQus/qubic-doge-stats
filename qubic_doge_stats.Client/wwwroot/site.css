@@ -46,16 +46,34 @@
     stroke-width: 1px !important;
 }
 
-/* ===== Chart axis labels - dark mode ===== */
+/* ===== Chart axis labels - color per theme ===== */
 .theme-dark .mud-chart text {
     fill: rgba(255, 255, 255, 0.55);
     font-size: 0.7rem;
 }
-
-/* Chart axis labels - light mode */
 .theme-light .mud-chart text {
     fill: rgba(20, 20, 50, 0.7);
     font-size: 0.7rem;
+}
+
+/* Y-axis labels: 2× size (desktop) — !important overrides inline SVG font-size attribute */
+.mud-charts-yaxis text {
+    font-size: 1.4rem !important;
+}
+
+/* X-axis labels: keep original size */
+.mud-charts-xaxis text {
+    font-size: 0.7rem !important;
+}
+
+/* Y-axis labels: 3× size (mobile) */
+@media (max-width: 600px) {
+    .mud-charts-yaxis text {
+        font-size: 2.1rem !important;
+    }
+    .mud-charts-xaxis text {
+        font-size: 0.7rem !important;
+    }
 }
 
 /* Chart grid lines - light mode */

@@ -1,6 +1,7 @@
 @page "/"
 @inject ApiClient Api
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>Qubic Doge Stats</PageTitle>
@@ -573,6 +574,82 @@ else
             </MudItem>
         </MudGrid>
 
+        @* Block Interval Summary *@
+        @if (_recentBlocks.Count >= 2)
+        {
+            <MudPaper Class="glass-card pa-3 mb-3" Elevation="0">
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.AvTimer" Style="color:#7e6fff; font-size:1.2rem;" />
+                    <MudText Style="font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:0.75rem; color:var(--mud-palette-text-secondary);">Avg Time Between Blocks</MudText>
+                    <MudTooltip Text="Average interval between consecutive DOGE blocks found by this pool. Calculated from block timestamps." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help;" />
+                    </MudTooltip>
+                </div>
+                <div class="d-flex flex-wrap gap-4">
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text">All-time</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#7e6fff; font-weight:700;">@(_avgBlockIntervalAll.HasValue ? FormatUptimeSpan(_avgBlockIntervalAll.Value) : "–")</MudText>
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text">Current Epoch</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#4EE0FC; font-weight:700;">@(_avgBlockIntervalEpoch.HasValue ? FormatUptimeSpan(_avgBlockIntervalEpoch.Value) : "–")</MudText>
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text">Since Last Block</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#FFD700; font-weight:700;">
+                            @{ var lastB = _recentBlocks.OrderByDescending(b => b.Time).FirstOrDefault(); }
+                            @(lastB is not null ? FormatUptimeSpan(DateTimeOffset.UtcNow - lastB.Time) : "–")
+                        </MudText>
+                    </div>
+                </div>
+            </MudPaper>
+        }
+
+        @* Per-Worker Block Stats *@
+        @if (_workerBlockStats.Count > 0)
+        {
+            <MudPaper Class="glass-card pa-3 mb-3" Elevation="0">
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Style="color:#7e6fff; font-size:1.2rem;" />
+                    <MudText Style="font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:0.75rem; color:var(--mud-palette-text-secondary);">Per Miner / Worker</MudText>
+                    <MudTooltip Text="Avg interval between consecutive blocks per worker address. Workers with only 1 block have no interval to calculate." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help;" />
+                    </MudTooltip>
+                </div>
+                <MudTable Items="@_workerBlockStats.OrderByDescending(w => w.BlockCount)" Dense="true" Hover="true"
+                          Style="background: transparent;" Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh Style="color: #7e6fff;">Worker</MudTh>
+                        <MudTh Style="color: #7e6fff;">Blocks</MudTh>
+                        <MudTh Style="color: #7e6fff;">Ø Interval</MudTh>
+                        <MudTh Style="color: #7e6fff;">Last Block</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Worker">
+                            <MudLink Href="@($"https://dogechain.info/address/{context.Worker}")" Target="_blank"
+                                     Style="color: #7e6fff; font-family: monospace; font-size: 0.75rem;">
+                                @(string.IsNullOrEmpty(context.Worker) ? "–" : context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
+                            </MudLink>
+                        </MudTd>
+                        <MudTd DataLabel="Blocks">
+                            <MudText Style="color:#FFD700; font-weight:600;">@context.BlockCount</MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Ø Interval">
+                            @if (context.AvgInterval.HasValue)
+                            {
+                                <MudText Style="color:#4caf50; font-weight:600;">@FormatUptimeSpan(context.AvgInterval.Value)</MudText>
+                            }
+                            else
+                            {
+                                <MudText Class="dim-text">–</MudText>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Last Block" Style="font-size: 0.8rem;">@context.LastBlockTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        }
+
         @* Full Block History Table *@
         @if (_recentBlocks.Count > 0)
         {
@@ -779,6 +856,7 @@ else
     private DateTimeOffset _lastRefresh = DateTimeOffset.UtcNow;
 
     // Block-found notification tracking
+    private const string BlockLocalStorageKey = "doge_seen_block_heights";
     private HashSet<string> _knownBlockHashes = [];
     private bool _blockTrackingReady = false;
 
@@ -859,7 +937,7 @@ else
     {
         Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
         Snackbar.Configuration.PreventDuplicates = false;
-        Snackbar.Configuration.MaxDisplayedSnackbars = 10;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
         await RefreshDataAsync();
         _refreshTimer = new System.Threading.Timer(async _ =>
         {
@@ -923,7 +1001,7 @@ else
         (_peakTasksDistributed,  _peakTasksDistributedEpoch)  = Peak(at?.PeakTasksDistributed  ?? 0, at?.PeakTasksDistributedEpoch  ?? 0, re?.TotalTasksDistributed,  reEp);
         (_peakSharesValid,       _peakSharesValidEpoch)       = Peak(at?.PeakSharesValid        ?? 0, at?.PeakSharesValidEpoch        ?? 0, re?.SharesValid,            reEp);
 
-        NotifyNewBlocks();
+        await NotifyNewBlocksAsync();
         BuildPoolEpochChart();
         // 10080 = 7 days × 24h × 60min at 60s poll interval (full epoch)
         _fullHistory = await Api.GetHistoryAsync(10080);
@@ -935,30 +1013,77 @@ _lastRefresh = DateTimeOffset.UtcNow;
         BuildEpochTimelineData();
     }
 
-    private void NotifyNewBlocks()
+    private async Task NotifyNewBlocksAsync()
     {
         if (!_blockTrackingReady)
         {
-            // First load: seed known hashes, no notifications
+            // First load — compare against localStorage to decide what to show
+            var stored = await JS.InvokeAsync<string?>("localStorage.getItem", BlockLocalStorageKey);
+            HashSet<long> seenHeights = [];
+            if (!string.IsNullOrEmpty(stored))
+            {
+                try { seenHeights = System.Text.Json.JsonSerializer.Deserialize<HashSet<long>>(stored) ?? []; }
+                catch { seenHeights = []; }
+            }
+
+            var sortedDesc = _recentBlocks.OrderByDescending(b => b.Height).ToList();
+            List<PoolBlock> toNotify;
+
+            if (seenHeights.Count == 0)
+            {
+                // First ever visit: show last 3
+                toNotify = sortedDesc.Take(3).OrderBy(b => b.Height).ToList();
+            }
+            else
+            {
+                var newBlocks = sortedDesc.Where(b => !seenHeights.Contains(b.Height)).OrderBy(b => b.Height).ToList();
+                // Gap > 5: too many missed, clear and show last 3
+                toNotify = newBlocks.Count > 5
+                    ? sortedDesc.Take(3).OrderBy(b => b.Height).ToList()
+                    : newBlocks;
+            }
+
+            foreach (var block in toNotify)
+                ShowBlockSnackbar(block);
+
+            // Persist current block heights
+            var allHeights = _recentBlocks.Select(b => b.Height).ToList();
+            await JS.InvokeVoidAsync("localStorage.setItem", BlockLocalStorageKey,
+                System.Text.Json.JsonSerializer.Serialize(allHeights));
+
             _knownBlockHashes = _recentBlocks.Select(b => b.Hash).ToHashSet();
             _blockTrackingReady = true;
             return;
         }
 
-        foreach (var block in _recentBlocks.Where(b => !_knownBlockHashes.Contains(b.Hash)))
+        // Subsequent timer refreshes: notify only genuinely new blocks
+        var newDuringRefresh = _recentBlocks.Where(b => !_knownBlockHashes.Contains(b.Hash)).ToList();
+        foreach (var block in newDuringRefresh)
         {
             _knownBlockHashes.Add(block.Hash);
-            var time = block.Time.ToLocalTime().ToString("HH:mm");
-            Snackbar.Add(
-                $"🐕 Block #{block.Height} gefunden! — {time} Uhr",
-                Severity.Success,
-                config =>
-                {
-                    config.VisibleStateDuration = 90 * 60 * 1000; // 90 Minuten
-                    config.ShowCloseIcon = true;
-                    config.DuplicatesBehavior = SnackbarDuplicatesBehavior.Allow;
-                });
+            ShowBlockSnackbar(block);
         }
+
+        if (newDuringRefresh.Count > 0)
+        {
+            var allHeights = _recentBlocks.Select(b => b.Height).ToList();
+            await JS.InvokeVoidAsync("localStorage.setItem", BlockLocalStorageKey,
+                System.Text.Json.JsonSerializer.Serialize(allHeights));
+        }
+    }
+
+    private void ShowBlockSnackbar(PoolBlock block)
+    {
+        var time = block.Time.ToLocalTime().ToString("HH:mm");
+        Snackbar.Add(
+            $"🐕 Block #{block.Height} found! — {time}",
+            Severity.Success,
+            config =>
+            {
+                config.VisibleStateDuration = 90 * 60 * 1000; // 90 minutes
+                config.ShowCloseIcon = true;
+                config.DuplicatesBehavior = SnackbarDuplicatesBehavior.Allow;
+            });
     }
 
     private void BuildPoolEpochChart()
@@ -1229,6 +1354,46 @@ _lastRefresh = DateTimeOffset.UtcNow;
         if (hashrate >= 1_000_000L)         return $"{hashrate / 1_000_000.0:F2} MH/s";
         return $"{hashrate} H/s";
     }
+
+    // ── Block interval helpers ──────────────────────────────────────────────────
+    private record WorkerBlockStat(string Worker, int BlockCount, TimeSpan? AvgInterval, DateTimeOffset LastBlockTime);
+
+    private TimeSpan? ComputeAvgInterval(IEnumerable<PoolBlock> blocks)
+    {
+        var sorted = blocks.OrderBy(b => b.Time).ToList();
+        if (sorted.Count < 2) return null;
+        var totalSecs = (sorted[^1].Time - sorted[0].Time).TotalSeconds;
+        return TimeSpan.FromSeconds(totalSecs / (sorted.Count - 1));
+    }
+
+    private TimeSpan? _avgBlockIntervalAll => ComputeAvgInterval(_recentBlocks);
+
+    private TimeSpan? _avgBlockIntervalEpoch
+    {
+        get
+        {
+            var curEpoch = _latest?.QubicEpoch ?? 0;
+            if (curEpoch == 0) return null;
+            return ComputeAvgInterval(_recentBlocks.Where(b => b.QubicEpoch == curEpoch));
+        }
+    }
+
+    private List<WorkerBlockStat> _workerBlockStats
+    {
+        get
+        {
+            return _recentBlocks
+                .Where(b => !string.IsNullOrEmpty(b.Worker))
+                .GroupBy(b => b.Worker)
+                .Select(g => new WorkerBlockStat(
+                    g.Key,
+                    g.Count(),
+                    ComputeAvgInterval(g),
+                    g.Max(b => b.Time)))
+                .ToList();
+        }
+    }
+    // ───────────────────────────────────────────────────────────────────────────
 
     private string FormatUptime(long seconds)
     {

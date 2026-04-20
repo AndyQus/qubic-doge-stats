@@ -58,6 +58,15 @@ builder.Services.AddHttpClient<DogePriceClient>(client =>
 });
 
 builder.Services.AddHostedService<DogePricePollingWorker>();
+
+// QU (Qubic) price HTTP client (CoinPaprika - free, no API key)
+builder.Services.AddHttpClient<QuPriceClient>(client =>
+{
+    client.BaseAddress = new Uri("https://api.coinpaprika.com/v1/tickers/qu-qubic");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
+builder.Services.AddHostedService<QuPricePollingWorker>();
 builder.Services.AddHostedService<DataBackfillService>();
 
 // Mining Pool Ranking HTTP client (miningpoolstats.stream)

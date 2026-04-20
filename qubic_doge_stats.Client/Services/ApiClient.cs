@@ -68,4 +68,10 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<MiningPoolRanking>("/api/mining-pools/ranking"); }
         catch { return null; }
     }
+
+    public async Task<QuPriceStats?> GetQuPriceAsync()
+    {
+        try { return await _http.GetFromJsonAsync<QuPriceStats>("/api/qu/price"); }
+        catch { return null; }
+    }
 }

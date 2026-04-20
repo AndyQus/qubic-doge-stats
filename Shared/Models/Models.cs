@@ -172,6 +172,13 @@ public class DogePriceStats
     public DateTimeOffset FetchedAt { get; set; }
 }
 
+// QU (Qubic) price from CoinPaprika
+public class QuPriceStats
+{
+    public decimal UsdPrice { get; set; }
+    public DateTimeOffset FetchedAt { get; set; }
+}
+
 // Aggregated summary for one completed Qubic epoch — persisted separately so raw snapshots can be deleted later
 public class EpochSummary
 {

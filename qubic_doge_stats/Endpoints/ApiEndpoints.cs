@@ -1,5 +1,6 @@
 using qubic_doge_stats.Infrastructure;
 using qubic_doge_stats.Workers;
+using qubic_doge_stats.Shared.Models;
 
 namespace qubic_doge_stats.Endpoints;
 
@@ -80,6 +81,12 @@ public static class ApiEndpoints
         {
             var ranking = MiningPoolRankingWorker.LatestRanking;
             return ranking is not null ? Results.Ok(ranking) : Results.NotFound();
+        });
+
+        api.MapGet("/qu/price", () =>
+        {
+            var price = QuPricePollingWorker.LatestPrice;
+            return price is not null ? Results.Ok(price) : Results.NotFound();
         });
 
 

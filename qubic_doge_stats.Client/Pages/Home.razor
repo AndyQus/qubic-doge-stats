@@ -761,6 +761,164 @@ else
 
     @* ── Profitability Tab ── *@
     <MudTabPanel Text="Profitability" Icon="@Icons.Material.Filled.TrendingUp">
+
+        @* ── Qubic vs. Direct DOGE Comparison ── *@
+        @{
+            double netHashGHs    = (_networkStats?.NetworkHashrate ?? 0) / 1_000_000_000.0;
+            double dogePrice     = (double)(_dogePrice?.UsdPrice ?? 0);
+            double quPriceUsd    = _quPriceManual > 0 ? _quPriceManual : (double)(_quPrice?.UsdPrice ?? 0);
+            double blocksPerDay  = 1440.0; // DOGE ~60s block time
+            double dogePerGHDay  = netHashGHs > 0 ? blocksPerDay * 10_000 / netHashGHs : 0;
+            double directUsdGH   = dogePerGHDay * dogePrice;
+            double viaQubicUsdGH = directUsdGH * (1 + _quBonusPct / 100.0);
+            double quPerGHDay    = quPriceUsd > 0 ? viaQubicUsdGH / quPriceUsd : 0;
+            double diffPct       = directUsdGH > 0 ? (_quBonusPct) : 0;
+        }
+
+        <MudText Typo="Typo.h6" Class="mb-1" Style="color:#7e6fff;">Direct DOGE Mining vs. Via Qubic</MudText>
+        <MudText Typo="Typo.caption" Class="dim-text mb-4 d-block">
+            Comparison per 1 GH/s · Mining DOGE via Qubic pays out in QU tokens from partner pools
+        </MudText>
+
+        @* Bonus input + QU price *@
+        <MudGrid Spacing="3" Class="mb-2">
+            <MudItem xs="12" sm="6" md="4" Style="display:flex;">
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="width:100%;">
+                    <MudNumericField T="double"
+                                     Label="Qubic Bonus %"
+                                     @bind-Value="_quBonusPct"
+                                     Min="0" Max="500" Step="0.5"
+                                     Format="F1"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Adornment="Adornment.End"
+                                     AdornmentText="%" />
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4" Style="display:flex;">
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="width:100%;">
+                    <MudNumericField T="double"
+                                     Label="QU Price (USD)"
+                                     @bind-Value="_quPriceManual"
+                                     Min="0" Max="1" Step="0.000000001"
+                                     Format="F9"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Adornment="Adornment.Start"
+                                     AdornmentText="$" />
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+        <MudPaper Class="glass-card pa-3 mb-4" Elevation="0">
+            <MudText Typo="Typo.caption" Class="dim-text">
+                <b style="color:#FFD700;">Phase 1 (Apr 2026, pool reserves):</b> Community data (Eko):
+                DG1+ 13 GH/s → $8.78/day via Qubic vs. $5.75/day direct
+                (<b style="color:#4caf50;">+53 %</b>).
+                <b>Phase 2 target: ~+10 %</b> via buyback mechanism —
+                <a href="https://qubic.org/blog-detail/qubic-doge-mining-pool-setup-dashboard-guide"
+                   target="_blank" rel="noopener"
+                   style="color:#FFD700; text-decoration:underline;">
+                    qubic.org guide (Apr 10, 2026)
+                </a>
+            </MudText>
+        </MudPaper>
+
+        @* Comparison table *@
+        <MudPaper Class="glass-card pa-4 mb-4" Elevation="0">
+            <MudGrid Spacing="4">
+                @* Direct DOGE *@
+                <MudItem xs="12" sm="6">
+                    <div style="border-left: 3px solid #7e6fff; padding-left: 12px;">
+                        <MudText Typo="Typo.caption" Class="dim-text mb-1 d-block" Style="text-transform:uppercase; letter-spacing:0.5px;">Direct DOGE Mining</MudText>
+                        <MudText Typo="Typo.h4" Style="color:#7e6fff; font-weight:700;">
+                            @(directUsdGH > 0 ? $"${directUsdGH:F4}" : "–")
+                            <span style="font-size:0.9rem; font-weight:400; color:var(--mud-palette-text-secondary);">/GH/day</span>
+                        </MudText>
+                        <div class="d-flex gap-4 mt-2 flex-wrap">
+                            <div>
+                                <MudText Typo="Typo.caption" Class="dim-text">DOGE/GH/day</MudText>
+                                <MudText Typo="Typo.body2" Style="color:#7e6fff; font-weight:600;">@(dogePerGHDay > 0 ? $"{dogePerGHDay:F4}" : "–")</MudText>
+                            </div>
+                            <div>
+                                <MudText Typo="Typo.caption" Class="dim-text">DOGE/TH/day</MudText>
+                                <MudText Typo="Typo.body2" Style="color:#7e6fff; font-weight:600;">@(dogePerGHDay > 0 ? $"{dogePerGHDay * 1000:F2}" : "–")</MudText>
+                            </div>
+                            <div>
+                                <MudText Typo="Typo.caption" Class="dim-text">USD/TH/day</MudText>
+                                <MudText Typo="Typo.body2" Style="color:#7e6fff; font-weight:600;">@(directUsdGH > 0 ? $"${directUsdGH * 1000:F2}" : "–")</MudText>
+                            </div>
+                        </div>
+                    </div>
+                </MudItem>
+
+                @* Via Qubic *@
+                <MudItem xs="12" sm="6">
+                    <div style="border-left: 3px solid #FFD700; padding-left: 12px;">
+                        <MudText Typo="Typo.caption" Class="dim-text mb-1 d-block" Style="text-transform:uppercase; letter-spacing:0.5px;">Via Qubic (paid in QU)</MudText>
+                        <MudText Typo="Typo.h4" Style="color:#FFD700; font-weight:700;">
+                            @(viaQubicUsdGH > 0 ? $"${viaQubicUsdGH:F4}" : "–")
+                            <span style="font-size:0.9rem; font-weight:400; color:var(--mud-palette-text-secondary);">/GH/day</span>
+                        </MudText>
+                        <div class="d-flex gap-4 mt-2 flex-wrap">
+                            <div>
+                                <MudText Typo="Typo.caption" Class="dim-text">QU/GH/day</MudText>
+                                <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">@(quPerGHDay > 0 ? $"{quPerGHDay:F0}" : "–")</MudText>
+                            </div>
+                            <div>
+                                <MudText Typo="Typo.caption" Class="dim-text">QU/TH/day</MudText>
+                                <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">@(quPerGHDay > 0 ? $"{quPerGHDay * 1000:N0}" : "–")</MudText>
+                            </div>
+                            <div>
+                                <MudText Typo="Typo.caption" Class="dim-text">USD/TH/day</MudText>
+                                <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">@(viaQubicUsdGH > 0 ? $"${viaQubicUsdGH * 1000:F2}" : "–")</MudText>
+                            </div>
+                        </div>
+                    </div>
+                </MudItem>
+            </MudGrid>
+
+            @* Difference banner *@
+            @if (directUsdGH > 0 && _quBonusPct > 0)
+            {
+                <div style="margin-top:16px; padding:10px 14px; border-radius:8px; background:rgba(76,175,80,0.1); border:1px solid rgba(76,175,80,0.25); display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Style="color:#4caf50;" />
+                    <MudText Typo="Typo.body2" Style="color:#4caf50; font-weight:700;">
+                        +@(_quBonusPct.ToString("F1")) % more yield via Qubic
+                    </MudText>
+                    <MudText Typo="Typo.caption" Class="dim-text">
+                        = $@((viaQubicUsdGH - directUsdGH).ToString("F4")) extra per GH/day · $@(((viaQubicUsdGH - directUsdGH) * 1000).ToString("F2")) per TH/day
+                    </MudText>
+                </div>
+            }
+        </MudPaper>
+
+        @* Partner pools *@
+        <div class="d-flex align-center gap-3 mb-2 flex-wrap">
+            <MudText Typo="Typo.subtitle2" Style="color:var(--mud-palette-text-secondary); text-transform:uppercase; letter-spacing:0.5px; font-size:0.75rem;">Qubic DOGE Mining Partner Pools</MudText>
+            <MudChip T="string" Size="Size.Small" Style="background:rgba(76,175,80,0.15); color:#4caf50; font-weight:700; font-size:0.7rem;">0 % Fee · Launch Phase</MudChip>
+        </div>
+        <MudGrid Spacing="3" Class="mb-2">
+            @foreach (var pool in _partnerPools)
+            {
+                <MudItem xs="12" sm="6" md="3" Style="display:flex;">
+                    <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%; width:100%;">
+                        <div class="d-flex align-center gap-2 mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Pool" Style="color:#FFD700; font-size:1.1rem;" />
+                            <MudText Style="font-weight:700; font-size:0.9rem; color:#FFD700;">@pool.Name</MudText>
+                        </div>
+                        <MudText Typo="Typo.caption" Class="dim-text d-block mb-1" Style="font-family:monospace; font-size:0.7rem; word-break:break-all;">@pool.Stratum</MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text d-block" Style="font-size:0.7rem;"><b>User:</b> @pool.UserFormat</MudText>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+        <MudText Typo="Typo.caption" Class="dim-text d-block mb-2">
+            Payout % varies by pool and phase. Adjust "Qubic Bonus %" above based on current community-reported rates.
+            DOGE per GH/day is calculated from live network hashrate — actual earnings depend on pool luck and difficulty.
+        </MudText>
+
+        <MudDivider Class="my-6" />
+
         <MudText Typo="Typo.h6" Class="mb-1" Style="color:#7e6fff;">ASIC Miner Profitability (Scrypt / DOGE)</MudText>
         <MudText Typo="Typo.caption" Class="dim-text mb-4 d-block">
             Revenue estimated from live DOGE price · Specs from Bitmain datasheets · Profit changes with your power cost
@@ -829,12 +987,23 @@ else
         <MudText Typo="Typo.caption" Class="dim-text mt-2 d-block">
             Profit = Revenue − (Power × 24h × $/kWh) · Network hashrate: @(_networkStats is not null ? $"{_networkStats.NetworkHashrate / 1_000_000_000_000.0:F2} TH/s" : "–")
         </MudText>
+
+
     </MudTabPanel>
 
 </MudTabs>
 
 @code {
     [CascadingParameter(Name = "IsDarkMode")] private bool IsDarkMode { get; set; } = true;
+
+    private record PoolInfo(string Name, string Stratum, string UserFormat);
+    private static readonly PoolInfo[] _partnerPools =
+    [
+        new("QLi Pool",   "stratum+tcp://doge.qubic.li:12480",      "QUBIC_ADDRESS.workerName"),
+        new("Apool",      "stratum+tcp://doge.asia.apool.io:3334",   "apool subaccount"),
+        new("MinerLab",   "stratum+tcp://qdoge.minerlab.io:18861",   "Username.workerName"),
+        new("Jetski Pool","stratum+tcp://doge.jetskipool.ai:6969",   "QUBICWALLET.WORKERNAME"),
+    ];
 
     private static readonly string[] _darkPalette = ["#7e6fff", "#4EE0FC", "#4caf50", "#ff9800", "#f44336"];
     private static readonly string[] _lightPalette = ["#3d1fcc", "#006f8a", "#1b5e20", "#bf3600", "#8b0000"];
@@ -845,6 +1014,9 @@ else
 
     private HashrateSnapshot? _latest;
     private PoolLiveStats? _poolStats;
+    private QuPriceStats? _quPrice;
+    private double _quBonusPct = 53.0;
+    private double _quPriceManual = 0.0;
 
     // Effective totals = finalized AllTimeStats + current running epoch (if not yet finalized)
     private int _totalPoolAccepted;
@@ -978,6 +1150,9 @@ else
     {
         _latest = await Api.GetLatestSnapshotAsync();
         _poolStats = await Api.GetPoolStatsAsync();
+        _quPrice = await Api.GetQuPriceAsync();
+        if (_quPrice is not null && _quPriceManual == 0.0)
+            _quPriceManual = (double)_quPrice.UsdPrice;
         _networkStats = await Api.GetNetworkStatsAsync();
         _dogePrice = await Api.GetDogePriceAsync();
         _recentBlocks = await Api.GetPoolBlocksAsync();

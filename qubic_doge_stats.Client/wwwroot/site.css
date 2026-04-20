@@ -61,9 +61,9 @@
     font-size: 1.4rem !important;
 }
 
-/* X-axis labels: keep original size */
+/* X-axis labels: dynamic size based on label count (--xaxis-font-size set per chart) */
 .mud-charts-xaxis text {
-    font-size: 0.7rem !important;
+    font-size: var(--xaxis-font-size, 1.26rem) !important;
 }
 
 /* Y-axis labels: 3× size (mobile) */
@@ -72,7 +72,17 @@
         font-size: 2.1rem !important;
     }
     .mud-charts-xaxis text {
-        font-size: 0.7rem !important;
+        font-size: var(--xaxis-font-size, 1.26rem) !important;
+    }
+
+    /* Chart wrapper: margin-left and reduced width based on Y-axis label char count */
+    .chart-mobile-wrapper {
+        margin-left: calc(var(--yaxis-chars, 3) * 0.6rem);
+        width: calc(100% - var(--yaxis-chars, 3) * 0.6rem);
+        overflow: visible;
+    }
+    .chart-mobile-wrapper svg {
+        overflow: visible;
     }
 }
 

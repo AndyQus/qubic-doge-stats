@@ -2,7 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Start App (F5)",
+            "name": "Watch + Chrome (F5)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5180",
+            "preLaunchTask": "watch",
+            "presentation": {
+                "order": 1
+            }
+        },
+        {
+            "name": "Start App (build only)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -19,6 +29,9 @@
             },
             "sourceFileMap": {
                 "/Views": "${workspaceFolder}/Views"
+            },
+            "presentation": {
+                "order": 2
             }
         }
     ]

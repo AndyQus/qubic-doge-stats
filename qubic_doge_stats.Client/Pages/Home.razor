@@ -147,33 +147,52 @@
                       Color="#FFD700"
                       Tooltip="Time since the last block was found (live). Epoch: average interval between blocks in the current epoch. All-time: average over all blocks ever found." />
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.LayersClear"
-                      Title="Current Epoch"
-                      Value="@(_latest.QubicEpoch > 0 ? _latest.QubicEpoch.ToString() : "–")"
-                      Color="#4EE0FC"
-                      Tooltip="Current Qubic epoch. Each epoch lasts one week (Wed 12:00 UTC to Wed 12:00 UTC). The epoch number increments weekly." />
+        @* ── Network Status: Epoch + Peers ── *@
+        <MudItem xs="12" sm="6" md="6">
+            <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                <div class="d-flex align-center gap-2 mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Hub" Style="color:#4EE0FC; font-size:1.4rem;" />
+                    <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">NETWORK STATUS</MudText>
+                    <MudTooltip Text="Current Qubic epoch (increments weekly, Wed 12:00 UTC). Connected peers vs. total known peers in the Qubic network." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                    </MudTooltip>
+                </div>
+                <div class="d-flex gap-6 align-end">
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:2px;">Epoch</MudText>
+                        <MudText Typo="Typo.h5" Style="color:#4EE0FC; font-weight:700;">@(_latest.QubicEpoch > 0 ? _latest.QubicEpoch.ToString() : "–")</MudText>
+                    </div>
+                    <div style="width:1px; background:rgba(255,255,255,0.08); align-self:stretch; margin:0 8px;"></div>
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:2px;">Connected Peers</MudText>
+                        <MudText Typo="Typo.h5" Style="color:#4EE0FC; font-weight:700;">@($"{_latest.ConnectedPeers} / {_latest.TotalPeers}")</MudText>
+                    </div>
+                </div>
+            </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.Timer"
-                      Title="Uptime"
-                      Value="@FormatUptime(_latest.UptimeSeconds)"
-                      Color="#4EE0FC"
-                      Tooltip="Time since the last dispatcher restart. A high value indicates stable, uninterrupted operation." />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.Hub"
-                      Title="Connected Peers"
-                      Value="@($"{_latest.ConnectedPeers} / {_latest.TotalPeers}")"
-                      Color="#4EE0FC"
-                      Tooltip="Currently connected peers vs. known peers in the Qubic network. Reflects the dispatcher's network connectivity." />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.Timer"
-                      Title="Pool Session Uptime"
-                      Value="@(_poolStats is not null ? FormatUptimeSpan(DateTimeOffset.UtcNow - _poolStats.SessionStart) : "–")"
-                      Color="#4EE0FC"
-                      Tooltip="Duration of the current pool session since the last pool server restart. Shares and blocks are counted per session." />
+
+        @* ── Uptime: Dispatcher + Pool Session ── *@
+        <MudItem xs="12" sm="6" md="6">
+            <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                <div class="d-flex align-center gap-2 mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Timer" Style="color:#4EE0FC; font-size:1.4rem;" />
+                    <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">UPTIME</MudText>
+                    <MudTooltip Text="Dispatcher: time since last dispatcher restart. Pool session: time since last pool server restart — shares and blocks are counted per session." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                    </MudTooltip>
+                </div>
+                <div class="d-flex gap-3 align-end">
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:2px;">Dispatcher</MudText>
+                        <MudText Style="color:#4EE0FC; font-weight:700; font-size:1.2rem;">@FormatUptime(_latest.UptimeSeconds)</MudText>
+                    </div>
+                    <div style="width:1px; background:rgba(255,255,255,0.08); align-self:stretch; margin:0 8px;"></div>
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:2px;">Pool Session</MudText>
+                        <MudText Style="color:#4EE0FC; font-weight:700; font-size:1.2rem;">@(_poolStats is not null ? FormatUptimeSpan(DateTimeOffset.UtcNow - _poolStats.SessionStart) : "–")</MudText>
+                    </div>
+                </div>
+            </MudPaper>
         </MudItem>
 
         @* ── Zeile 3: Arbeitsdaten (Qubic + Pool Shares) ── *@
@@ -245,34 +264,45 @@
         </MudItem>
 
         @* ── Zeile 4: Finanzen ── *@
-        
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.Toll"
-                      Title="Block Reward"
-                      Value="10,000 DOGE"
-                      Color="#FFD700"
-                      Tooltip="Fixed Dogecoin block reward per mined block. Unlike Bitcoin, DOGE completed all scheduled halvings in 2015 — the reward is permanently fixed at 10,000 DOGE." />
+        @{
+            var totalBlocks = _totalBlocksFound;
+            var historicalUsd = _recentBlocks.Where(b => b.DogePriceUsdAtFind > 0).Sum(b => b.DogePriceUsdAtFind * DogeBlockReward);
+            var currentUsd = _dogePrice is not null ? totalBlocks * DogeBlockReward * _dogePrice.UsdPrice : 0m;
+        }
+
+        @* DOGE: Price · Per Block · Block Reward *@
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                <div class="d-flex align-center gap-2 mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.MonetizationOn" Style="color:#FFD700; font-size:1.4rem;" />
+                    <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">DOGE <span style="opacity:0.4; font-weight:400;">·</span> 10,000 DOGE block reward</MudText>
+                    <MudTooltip Text="DOGE price updated hourly via CoinPaprika. Block reward is permanently fixed at 10,000 DOGE since 2015. Per Block = price × 10,000 DOGE." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                    </MudTooltip>
+                </div>
+
+                @* Price · Per Block *@
+                <div class="d-flex align-center gap-3 flex-wrap">
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:1px;">Price</MudText>
+                        <MudText Typo="Typo.h5" Style="color:#FFD700; font-weight:700; white-space:nowrap;">
+                            @(_dogePrice is not null ? $"${_dogePrice.UsdPrice:F4}" : "–")
+                        </MudText>
+                    </div> 
+                    <div style="width:1px; background:rgba(255,255,255,0.08); align-self:stretch; margin:0 8px;"></div>
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:1px;">Per Block</MudText>
+                        <MudText Typo="Typo.h5" Style="color:#FFD700; font-weight:700; white-space:nowrap;">
+                            @(_dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
+                        </MudText>
+                    </div>
+                </div>
+
+            </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.AttachMoney"
-                      Title="DOGE Price (USD)"
-                      Value="@(_dogePrice is not null ? $"${_dogePrice.UsdPrice:F4}" : "–")"
-                      Color="#FFD700"
-                      Tooltip="Current DOGE price in US Dollar (updated hourly via CoinPaprika)." />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <StatCard Icon="@Icons.Material.Filled.MonetizationOn"
-                      Title="Block Reward (USD)"
-                      Value="@(_dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")"
-                      Color="#FFD700"
-                      Tooltip="Current USD value of one Dogecoin block reward (10,000 DOGE × current price)." />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            @{
-                var totalBlocks = _totalBlocksFound;
-                var historicalUsd = _recentBlocks.Where(b => b.DogePriceUsdAtFind > 0).Sum(b => b.DogePriceUsdAtFind * DogeBlockReward);
-                var currentUsd = _dogePrice is not null ? totalBlocks * DogeBlockReward * _dogePrice.UsdPrice : 0m;
-            }
+
+        @* Total Block Reward *@
+        <MudItem xs="12" sm="6" md="8">
             <StatCard Icon="@Icons.Material.Filled.Savings"
                       Title="Total Block Reward"
                       Value="@($"{totalBlocks * DogeBlockReward:N0} DOGE")"

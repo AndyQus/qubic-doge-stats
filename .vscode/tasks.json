@@ -7,11 +7,23 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/qubic_doge_stats/qubic_doge_stats.csproj",
+                "${workspaceFolder}/qubic_doge_stats.sln",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch",
+            "type": "shell",
+            "command": "dotnet watch run --project ${workspaceFolder}/qubic_doge_stats/qubic_doge_stats.csproj",
+            "dependsOn": ["build"],
+            "isBackground": true,
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
         }
     ]
 }

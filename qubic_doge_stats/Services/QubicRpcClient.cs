@@ -7,7 +7,11 @@ public class QubicRpcClient
 {
     private readonly HttpClient _http;
     private readonly ILogger<QubicRpcClient> _logger;
-    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
+    };
 
     public QubicRpcClient(HttpClient http, ILogger<QubicRpcClient> logger)
     {
@@ -35,6 +39,20 @@ public class QubicRpcClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch Qubic tick info");
+            return null;
+        }
+    }
+
+    public async Task<QubicTransferResponse?> GetAddressTransfersAsync(string address, CancellationToken ct = default)
+    {
+        try
+        {
+            var json = await _http.GetStringAsync($"v2/identities/{address}/transfers", ct);
+            return JsonSerializer.Deserialize<QubicTransferResponse>(json, _jsonOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to fetch Qubic transfers for {Address}: {Message}", address, ex.Message);
             return null;
         }
     }

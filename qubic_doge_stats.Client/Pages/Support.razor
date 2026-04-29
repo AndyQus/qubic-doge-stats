@@ -1,0 +1,217 @@
+@page "/support"
+@inject ApiClient Api
+@inject IJSRuntime JS
+
+<PageTitle>Support · DOGE Mining Stats</PageTitle>
+
+<div style="max-width:72%; margin:0 auto;">
+
+<div class="mb-6 text-center">
+    <MudText Typo="Typo.h5" Style="font-weight:700; color:#4EE0FC; text-align:center;">Support</MudText>
+    <MudText Typo="Typo.body2" Style="color:#9ca3af; margin-top:4px; text-align:center;">
+        All tools are free, some open-source. Your support keeps development alive.
+    </MudText>
+</div>
+
+<MudGrid Spacing="4">
+
+    @* COL 1: About + Why *@
+    <MudItem xs="12" md="4">
+
+        <MudPaper Class="glass-card pa-5 mb-4" Elevation="0">
+            <MudText Style="font-weight:600; color:#f9fafb; font-size:1rem; margin-bottom:12px;">About AndyQus</MudText>
+            <MudText Typo="Typo.body2" Style="color:#d1d5db; line-height:1.6; margin-bottom:10px;">
+                AndyQus has been an active community developer in the Qubic ecosystem for several years.
+                He served as Project Manager for the official
+                <a href="https://live.qubic.org/explorer" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">Qubic Explorer</a>,
+                as Admin for Quottery and as Developer for the
+                <a href="https://wallet.qubic.org" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">Qubic Web Wallet</a>
+                — for which he was compensated by the Qubic core team at the time.
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color:#d1d5db; line-height:1.6; margin-bottom:12px;">
+                All other tools, such as
+                <a href="https://myledger.qubic.tools" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">MyLedger</a>,
+                <a href="https://dividends.qubic.tools" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">Dividends</a>,
+                <a href="https://auctions.qubic.tools" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">Auctions</a>,
+                <a href="https://doge.qubic.tools" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">Doge-Mining-Stats</a>,
+                <a href="https://live.qubic.org" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">Live</a>,
+                <a href="https://marketplace.visualstudio.com/items?itemName=AndyQus.qubic-org-qpi" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">VS Marketplace — QPI Language Support</a>,
+                <a href="https://github.com/AndyQus/qubic-flow" target="_blank" rel="noopener" style="color:#4EE0FC; text-decoration:none;">QubicFlow</a>,
+                have been built since January 2025 entirely in his free time — free of charge, without any compensation, purely for the community.
+            </MudText>
+        </MudPaper>
+
+        <MudPaper Class="glass-card pa-5" Elevation="0">
+            <MudText Style="font-weight:600; color:#f9fafb; font-size:1rem; margin-bottom:12px;">What is your support used for?</MudText>
+            @foreach (var reason in _reasons)
+            {
+                <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#4EE0FC" stroke-width="2" style="flex-shrink:0; margin-top:2px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <MudText Typo="Typo.body2" Style="color:#d1d5db;">@reason</MudText>
+                </div>
+            }
+        </MudPaper>
+
+    </MudItem>
+
+    @* COL 2: Donation Address + Supporter Ranks *@
+    <MudItem xs="12" md="4">
+
+        <MudPaper Class="glass-card pa-5 mb-4" Elevation="0">
+            <MudText Style="font-weight:600; color:#f9fafb; font-size:1rem; margin-bottom:12px;">Qubic Donation Address</MudText>
+            <div style="display:flex; justify-content:center; margin-bottom:14px;">
+                <div style="width:130px; height:130px; border-radius:8px; flex-shrink:0;
+                            background-image:url('images/donation_qr.svg');
+                            background-size:100% 100%;
+                            background-repeat:no-repeat;"></div>
+            </div>
+            <div style="background:rgba(0,0,0,0.35); border-radius:8px; padding:10px; border:1px solid rgba(255,255,255,0.08); font-family:monospace; font-size:0.8rem; color:#e0e0e0; word-break:break-all; line-height:1.6; margin-bottom:10px;">
+                @DonationAddress
+            </div>
+            <button @onclick="CopyAddressAsync"
+                    style="@(_copied
+                        ? "width:100%; padding:8px; border-radius:8px; border:none; cursor:pointer; background:#4caf50; color:#fff; font-weight:600; font-size:0.875rem;"
+                        : "width:100%; padding:8px; border-radius:8px; border:none; cursor:pointer; background:#4EE0FC; color:#0d1117; font-weight:600; font-size:0.875rem;")">
+                @(_copied ? "✓ Copied!" : "Copy Address")
+            </button>
+        </MudPaper>
+
+        <MudPaper Class="glass-card pa-5" Elevation="0">
+            <MudText Style="font-weight:600; color:#f9fafb; font-size:1rem; margin-bottom:4px;">Supporter Ranks</MudText>
+            <MudText Typo="Typo.caption" Style="color:#9ca3af; display:block; margin-bottom:14px;">
+                Send QU to the address above — your rank is determined by total donated.
+            </MudText>
+            @foreach (var rank in _ranks)
+            {
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <span style="font-size:1.4rem; flex-shrink:0;">@rank.Icon</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; color:@rank.Color; font-size:0.875rem;">@rank.Name</div>
+                        <div style="font-size:0.7rem; color:#9ca3af;">@rank.Desc</div>
+                    </div>
+                    <div style="font-family:monospace; font-size:0.75rem; color:#4EE0FC; text-align:right; flex-shrink:0;">@rank.Amount</div>
+                </div>
+            }
+        </MudPaper>
+
+    </MudItem>
+
+    @* COL 3: Top 50 *@
+    <MudItem xs="12" md="4">
+        <MudPaper Class="glass-card pa-5" Elevation="0">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#f59e0b" viewBox="0 0 24 24">
+                    <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+                <MudText Style="font-weight:600; color:#f9fafb; font-size:1rem;">Top 50 Supporters</MudText>
+            </div>
+            <MudText Typo="Typo.caption" Style="color:#9ca3af; display:block; margin-bottom:16px;">
+                Top 50 supporters by QU sent — data directly from Qubic Explorer.
+            </MudText>
+
+            @if (_topDonors.Count == 0)
+            {
+                <div style="text-align:center; padding:32px 0; color:#6b7280; font-style:italic; font-size:0.875rem;">
+                    Be the first supporter! ❤️
+                </div>
+            }
+            else
+            {
+                <div style="max-height:520px; overflow-y:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                        <thead style="position:sticky; top:0; background:#1a2332;">
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+                                <th style="text-align:left; padding-bottom:8px; color:#9ca3af; font-weight:500;">#</th>
+                                <th style="text-align:left; padding-bottom:8px; color:#9ca3af; font-weight:500;">Rank</th>
+                                <th style="text-align:left; padding-bottom:8px; color:#9ca3af; font-weight:500;">Address</th>
+                                <th style="text-align:right; padding-bottom:8px; color:#9ca3af; font-weight:500;">QU</th>
+                                <th style="text-align:right; padding-bottom:8px; color:#9ca3af; font-weight:500;">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < _topDonors.Count; i++)
+                            {
+                                var donor = _topDonors[i];
+                                var pos = i + 1;
+                                var donorRank = GetRank(donor.TotalQu);
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                                    <td style="padding:7px 0; color:#6b7280;">@pos</td>
+                                    <td style="padding:7px 4px 7px 0; white-space:nowrap;">
+                                        <span title="@donorRank.Name" style="font-size:1rem;">@donorRank.Icon</span>
+                                        <span style="margin-left:4px; font-size:0.7rem; color:@donorRank.Color; font-weight:600;">@donorRank.Name</span>
+                                    </td>
+                                    <td style="padding:7px 0; font-family:monospace; color:#d1d5db;" title="@donor.Address">
+                                        @donor.Address[..Math.Min(5, donor.Address.Length)]…
+                                    </td>
+                                    <td style="padding:7px 0; text-align:right; font-family:monospace; color:#f59e0b; font-weight:600;">
+                                        @donor.TotalQu.ToString("N0")
+                                    </td>
+                                    <td style="padding:7px 0; text-align:right; color:#6b7280;">@donor.Date</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div style="margin-top:14px; text-align:center; font-size:0.75rem; color:#f59e0b; opacity:0.75; font-style:italic;">
+                A heartfelt thank you to Eko for real-world mining data and community contributions! ❤️
+            </div>
+        </MudPaper>
+    </MudItem>
+
+</MudGrid>
+
+</div>
+
+@code {
+    private const string DonationAddress = "CCCJKFMDTUFFWDCRBFNHMQRYOBABEKBDUZWEJMARUETQPTFZWBCJLYUGREXI";
+
+    private bool _copied = false;
+    private List<TopDonor> _topDonors = [];
+
+    private static readonly string[] _reasons =
+    [
+        "Further development of existing projects, new features",
+        "New software projects for Qubic",
+        "Support & bug fixes",
+        "Time & effort",
+        "Appreciation for open-source work"
+    ];
+
+    private record RankInfo(string Icon, string Name, string Color, string Amount, string Desc);
+    private static readonly RankInfo[] _ranks =
+    [
+        new("⚡", "Quantum Spark",   "#a78bfa", "≥ 1,000,000 QU",   "Every spark starts a fire"),
+        new("🗡️", "Qubic Knight",    "#38bdf8", "≥ 10,000,000 QU",  "A warrior for the ecosystem"),
+        new("⚔️", "Crypto Avenger",  "#4EE0FC", "≥ 25,000,000 QU",  "Defending decentralization"),
+        new("🛡️", "Block Guardian",  "#4ade80", "≥ 50,000,000 QU",  "Protecting the network"),
+        new("👑", "Chain Legend",    "#FFD700", "≥ 100,000,000 QU", "Forever immortalized"),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _topDonors = await Api.GetTopDonorsAsync(50);
+    }
+
+    private static RankInfo GetRank(long totalQu) => totalQu switch
+    {
+        >= 100_000_000 => _ranks[4],
+        >= 50_000_000  => _ranks[3],
+        >= 25_000_000  => _ranks[2],
+        >= 10_000_000  => _ranks[1],
+        _              => _ranks[0],
+    };
+
+    private async Task CopyAddressAsync()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", DonationAddress);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copied = false;
+        StateHasChanged();
+    }
+}

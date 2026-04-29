@@ -314,3 +314,49 @@ public class AsicProfitabilityData
     public List<AsicMinerData> Miners { get; set; } = [];
     public DateTimeOffset FetchedAt { get; set; }
 }
+
+public class DonationEntry
+{
+    [BsonId(autoId: true)]
+    public ObjectId Id { get; set; } = ObjectId.NewObjectId();
+    public string Address { get; set; } = "";
+    public long AmountQu { get; set; }
+    public DateTime Date { get; set; }
+}
+
+public class TopDonor
+{
+    public string Address { get; set; } = "";
+    public long TotalQu { get; set; }
+    public string Date { get; set; } = "";
+}
+
+// Qubic RPC v2 response models for address transfers
+// Actual structure: GET /v2/identities/{id}/transfers
+public class QubicTransferResponse
+{
+    public List<QubicTickGroup> Transactions { get; set; } = [];
+}
+
+public class QubicTickGroup
+{
+    public long TickNumber { get; set; }
+    public string Identity { get; set; } = "";
+    public List<QubicTransactionEntry> Transactions { get; set; } = [];
+}
+
+public class QubicTransactionEntry
+{
+    public QubicTransactionDetail Transaction { get; set; } = new();
+    public long Timestamp { get; set; }  // Unix ms
+    public bool MoneyFlew { get; set; }
+}
+
+public class QubicTransactionDetail
+{
+    public string SourceId { get; set; } = "";
+    public string DestId { get; set; } = "";
+    public long Amount { get; set; }
+    public long TickNumber { get; set; }
+    public int InputType { get; set; }
+}

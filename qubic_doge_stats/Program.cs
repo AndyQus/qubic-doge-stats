@@ -83,6 +83,7 @@ builder.Services.AddHttpClient<MiningPoolRankingClient>(client =>
 });
 
 builder.Services.AddHostedService<MiningPoolRankingWorker>();
+builder.Services.AddHostedService<DonationPollingWorker>();
 
 
 // CORS

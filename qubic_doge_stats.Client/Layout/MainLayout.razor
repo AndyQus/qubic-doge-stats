@@ -8,7 +8,7 @@
 
 <MudLayout Class="@(_isDarkMode ? "theme-dark" : "theme-light")">
     <MudAppBar Elevation="1" Class="app-header-bar" Style="background-color: #0d1117; color: #e0e0e0;">
-            
+
         <div class="header-title">
             <a href="/" class="header-logo">
                 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="36" viewBox="0 0 189 56" fill="none">
@@ -23,8 +23,39 @@
         <MudSpacer />
         <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                        Color="Color.Inherit" OnClick="ToggleDarkMode" />
+        <MudIconButton Icon="@Icons.Material.Filled.Favorite" Color="Color.Inherit" Href="/support" Style="color:#FFD700;" />
     </MudAppBar>
     <MudMainContent>
+        @if (_bannerInitialized && _bannerVisible)
+        {
+            <div style="width:100%; background:linear-gradient(90deg,#f59e0b,#ea580c,#f59e0b); color:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.3); padding-top:3px;">
+                <div style="padding:10px 16px 10px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:0; padding-top:3px;">
+                        <span style="font-weight:700; font-size:0.875rem; display:block;">Support this project ❤️</span>
+                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.85);">All tools are free — your QUBIC donation keeps development alive.</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-shrink:0; padding-top:5px;">
+                        <a href="/support" style="padding:6px 14px; background:#fff; color:#ea580c; font-weight:700; font-size:0.75rem; border-radius:9999px; text-decoration:none; white-space:nowrap;">
+                            Support now
+                        </a>
+                        <button @onclick="DismissBannerAsync"
+                                style="background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.8); padding:4px; display:flex; align-items:center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (_bannerInitialized && _bannerMini)
+        {
+            <div style="width:100%; height:32px; line-height:32px; text-align:center; background:linear-gradient(90deg,#f59e0b,#ea580c,#f59e0b); box-shadow:0 1px 4px rgba(0,0,0,0.3); overflow:hidden; padding-top:3px;">
+                <a href="/support" style="font-size:0.8rem; color:#0d1117; text-decoration:none; font-weight:700; letter-spacing:0.02em;">
+                    Support this project — Keep development alive →
+                </a>
+            </div>
+        }
         <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
             <CascadingValue Value="_isDarkMode" Name="IsDarkMode">
                 @Body
@@ -43,6 +74,10 @@
 @code {
     private MudThemeProvider _themeProvider = null!;
     private bool _isDarkMode = true;
+    private bool _bannerVisible = false;
+    private bool _bannerMini = false;
+    private bool _bannerInitialized = false;
+    private const string BannerKey = "support_banner_closed";
 
     private MudTheme _theme = new MudTheme
     {
@@ -72,10 +107,23 @@
     {
         if (firstRender)
         {
+            var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var closedDate = await JS.InvokeAsync<string?>("localStorage.getItem", BannerKey);
+            _bannerVisible = string.IsNullOrEmpty(closedDate) || closedDate != today;
+            _bannerMini = !_bannerVisible;
+            _bannerInitialized = true;
             await JS.InvokeVoidAsync("eval", "document.activeElement?.blur()");
             StateHasChanged();
         }
     }
 
     private void ToggleDarkMode() => _isDarkMode = !_isDarkMode;
+
+    private async Task DismissBannerAsync()
+    {
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        await JS.InvokeVoidAsync("localStorage.setItem", BannerKey, today);
+        _bannerVisible = false;
+        _bannerMini = true;
+    }
 }

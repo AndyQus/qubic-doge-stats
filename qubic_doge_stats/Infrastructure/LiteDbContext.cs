@@ -35,6 +35,9 @@ public class LiteDbContext : IDisposable
 
         var epochCol = _db.GetCollection<EpochSummary>("epoch_summaries");
         epochCol.EnsureIndex(x => x.EpochNumber, unique: true);
+
+        var donCol = _db.GetCollection<DonationEntry>("donations");
+        donCol.EnsureIndex(x => x.Address);
     }
 
     public List<HashrateSnapshot> GetSnapshots(int limit = 1440)
@@ -383,6 +386,57 @@ public class LiteDbContext : IDisposable
                 ats.UpdatedAt     = fetchedAt;
                 atsCol.Upsert(ats);
             }
+        }
+    }
+
+    public List<TopDonor> GetTopDonors(int limit = 20)
+    {
+        lock (_lock)
+        {
+            return _db.GetCollection<DonationEntry>("donations")
+                .Query()
+                .ToList()
+                .GroupBy(d => d.Address)
+                .Select(g => new TopDonor
+                {
+                    Address = g.Key,
+                    TotalQu = g.Sum(d => d.AmountQu),
+                    Date = g.Max(d => d.Date).ToString("yyyy-MM-dd")
+                })
+                .OrderByDescending(d => d.TotalQu)
+                .Take(limit)
+                .ToList();
+        }
+    }
+
+    public long GetLastDonationTick()
+    {
+        lock (_lock)
+        {
+            var col = _db.GetCollection("donation_settings");
+            var doc = col.FindOne(x => x["_id"] == "last_tick");
+            return doc?["value"].AsInt64 ?? 0;
+        }
+    }
+
+    public void SetLastDonationTick(long tick)
+    {
+        lock (_lock)
+        {
+            var col = _db.GetCollection("donation_settings");
+            var doc = new BsonDocument { ["_id"] = "last_tick", ["value"] = tick };
+            col.Upsert(doc);
+        }
+    }
+
+    public void InsertDonationIfNew(DonationEntry entry)
+    {
+        lock (_lock)
+        {
+            var col = _db.GetCollection<DonationEntry>("donations");
+            var exists = col.Exists(x => x.Address == entry.Address && x.AmountQu == entry.AmountQu && x.Date == entry.Date);
+            if (!exists)
+                col.Insert(entry);
         }
     }
 

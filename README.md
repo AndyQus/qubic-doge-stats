@@ -362,6 +362,19 @@ The database is persisted in a named Docker volume (`qubic_doge_data`).
 
 ---
 
+## Support
+
+All tools are free and built in spare time for the Qubic community. If you find them useful, a QUBIC donation is very welcome and keeps development alive.
+
+**Donation address:**
+```
+CCCJKFMDTUFFWDCRBFNHMQRYOBABEKBDUZWEJMARUETQPTFZWBCJLYUGREXI
+```
+
+Visit the [Support page](https://doge.qubic.tools/support) for the full donor leaderboard and supporter ranks.
+
+---
+
 ## Disclaimer
 
 This application is in **beta**. All data is retrieved from public endpoints.

@@ -74,4 +74,10 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<QuPriceStats>("/api/qu/price"); }
         catch { return null; }
     }
+
+    public async Task<List<TopDonor>> GetTopDonorsAsync(int limit = 50)
+    {
+        try { return await _http.GetFromJsonAsync<List<TopDonor>>($"/api/donations/top?limit={limit}") ?? []; }
+        catch { return []; }
+    }
 }

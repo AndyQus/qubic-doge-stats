@@ -138,9 +138,9 @@
                                 var donorRank = GetRank(donor.TotalQu);
                                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
                                     <td style="padding:7px 0; color:#6b7280;">@pos</td>
-                                    <td style="padding:7px 4px 7px 0; white-space:nowrap;">
-                                        <span title="@donorRank.Name" style="font-size:1rem;">@donorRank.Icon</span>
-                                        <span style="margin-left:4px; font-size:0.7rem; color:@donorRank.Color; font-weight:600;">@donorRank.Name</span>
+                                    <td style="padding:7px 4px 7px 0; white-space:nowrap; font-size:0.75rem;">
+                                        <span title="@donorRank.Name">@donorRank.Icon</span>
+                                        <span style="margin-left:4px; color:@donorRank.Color; font-weight:600;">@donorRank.Name</span>
                                     </td>
                                     <td style="padding:7px 0; font-family:monospace; color:#d1d5db;" title="@donor.Address">
                                         @donor.Address[..Math.Min(5, donor.Address.Length)]…
@@ -157,7 +157,7 @@
             }
 
             <div style="margin-top:14px; text-align:center; font-size:0.75rem; color:#f59e0b; opacity:0.75; font-style:italic;">
-                A heartfelt thank you to Eko for real-world mining data and community contributions! ❤️
+                A heartfelt thank you to Eko for his generous support in the past. ❤️
             </div>
         </MudPaper>
     </MudItem>

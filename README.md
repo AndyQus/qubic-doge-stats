@@ -332,6 +332,15 @@ docker run -d \
   qubic_doge_stats
 ```
 
+### Publish to Docker Hub
+
+```bash
+docker build -t andyqus/qubic_doge_stats:latest .
+docker push andyqus/qubic_doge_stats:latest
+```
+
+The image is available at [hub.docker.com/r/andyqus/qubic_doge_stats](https://hub.docker.com/r/andyqus/qubic_doge_stats).
+
 The app will be available at `http://localhost:8080`.
 
 The database is persisted in a named Docker volume (`qubic_doge_data`).

@@ -1,3 +1,20 @@
+.support-wrapper {
+    max-width: 72%;
+    margin: 0 auto;
+}
+
+@media (max-width: 1280px) {
+    .support-wrapper {
+        max-width: 95%;
+    }
+}
+
+@media (max-width: 960px) {
+    .support-wrapper {
+        max-width: 100%;
+    }
+}
+
 /* Focus outline nur bei Tastaturnavigation, nicht bei Maus/Touch */
 :focus:not(:focus-visible) {
     outline: none !important;
@@ -147,6 +164,22 @@
 
 .header-title h1 span {
     color: #23FFFF;
+}
+
+@media (max-width: 600px) {
+    .header-title svg {
+        height: 20px;
+    }
+
+    .header-title h1 {
+        font-size: 0.78rem;
+        letter-spacing: 0.5px;
+    }
+
+    .header-title {
+        gap: 7px;
+        margin-left: 4px;
+    }
 }
 
 /* ===== 5-column stats grid on md+ ===== */

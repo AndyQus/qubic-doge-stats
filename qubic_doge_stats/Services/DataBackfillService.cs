@@ -64,9 +64,9 @@ public class DataBackfillService : BackgroundService
 
                 if (block.QubicEpoch != correctEpoch)
                 {
-                    _logger.LogInformation("DataBackfill: block {Height} ({Time:yyyy-MM-dd HH:mm}) epoch {Old} → {New}",
-                        block.Height, block.Time, block.QubicEpoch, correctEpoch);
-                    db.FixPoolBlockEpoch(block.Height, correctEpoch);
+                    _logger.LogInformation("DataBackfill: block {Height} ({Chain}, {Time:yyyy-MM-dd HH:mm}) epoch {Old} → {New}",
+                        block.Height, block.Chain, block.Time, block.QubicEpoch, correctEpoch);
+                    db.FixPoolBlockEpoch(block.Height, correctEpoch, block.Chain);
                     fixedCount++;
                 }
             }

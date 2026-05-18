@@ -19,10 +19,14 @@ public class DonationPollingWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await PollAsync(stoppingToken);
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(30));
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
+        {
             await PollAsync(stoppingToken);
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(30));
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+                await PollAsync(stoppingToken);
+        }
+        catch (OperationCanceledException) { }
     }
 
     private async Task PollAsync(CancellationToken ct)

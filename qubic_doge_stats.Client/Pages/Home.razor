@@ -50,6 +50,7 @@
                       Tooltip="@(_miningPoolRanking is not null ? $"Qubic's rank among all DOGE mining pools by hashrate (of {_miningPoolRanking.TotalPools} pools · updated {_miningPoolRanking.FetchedAt.ToLocalTime():HH:mm}). Lower = better. Epoch: best rank this epoch. Best: all-time best rank." : "Qubic's rank among all DOGE mining pools by hashrate. Lower = better.")" />
         </MudItem>
         
+        @* ── DOGE Blocks ── *@
         <MudItem xs="12" sm="6" md="3">
             <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
                 <div class="d-flex align-center gap-2 mb-2">
@@ -59,12 +60,10 @@
                         <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
                     </MudTooltip>
                 </div>
-                @* Current epoch *@
                 <div class="d-flex gap-2 align-baseline mb-1">
                     <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_currentEpochBlocksConfirmed > 0 ? _currentEpochBlocksConfirmed.ToString("N0") : "–")</MudText>
                     <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">(@(_currentEpochBlocksFound > 0 ? _currentEpochBlocksFound.ToString("N0") : "–"))</MudText>
                 </div>
-                @* Epoch peak *@
                 <div class="d-flex align-center gap-1 mt-1">
                     <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Best</MudText>
                     <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakBlocksConfirmed > 0 ? _peakBlocksConfirmed.ToString("N0") : "–")</MudText>
@@ -72,11 +71,39 @@
                     <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
                     <MudText Typo="Typo.caption" Style="color:#4caf50;">E@(_peakBlocksFoundEpoch)</MudText>
                 </div>
-                @* Total *@
                 <div class="d-flex align-center gap-1 mt-1">
                     <MudText Typo="Typo.body1" Style="color:#FF8C00; font-weight:700; min-width:3rem;">Total</MudText>
                     <MudText Typo="Typo.body1" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")</MudText>
                     <MudText Typo="Typo.body1" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : "–"))</MudText>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        @* ── LTC Blocks ── *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Stars" Style="color:#4caf50; font-size:1.4rem;" />
+                    <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">LTC BLOCKS</MudText>
+                    <MudTooltip Text="Blue = Found, Green = Confirmed. Row 1: current epoch. Row 2 (Best): epoch with the most LTC blocks ever. Row 3 (Total): all-time sum across all epochs." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                    </MudTooltip>
+                </div>
+                <div class="d-flex gap-2 align-baseline mb-1">
+                    <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_currentEpochLtcBlocksConfirmed > 0 ? _currentEpochLtcBlocksConfirmed.ToString("N0") : "–")</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#345D9D; font-weight:600;">(@(_currentEpochLtcBlocksFound > 0 ? _currentEpochLtcBlocksFound.ToString("N0") : "–"))</MudText>
+                </div>
+                <div class="d-flex align-center gap-1 mt-1">
+                    <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Best</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakLtcBlocksConfirmed > 0 ? _peakLtcBlocksConfirmed.ToString("N0") : "–")</MudText>
+                    <MudText Typo="Typo.body2" Style="color:#345D9D; opacity:0.8; font-weight:600;">(@(_peakLtcBlocksFound > 0 ? _peakLtcBlocksFound.ToString("N0") : "–"))</MudText>
+                    <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
+                    <MudText Typo="Typo.caption" Style="color:#4caf50;">E@(_peakLtcBlocksFoundEpoch)</MudText>
+                </div>
+                <div class="d-flex align-center gap-1 mt-1">
+                    <MudText Typo="Typo.body1" Style="color:#FF8C00; font-weight:700; min-width:3rem;">Total</MudText>
+                    <MudText Typo="Typo.body1" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_totalLtcBlocksConfirmed > 0 ? _totalLtcBlocksConfirmed.ToString("N0") : "–")</MudText>
+                    <MudText Typo="Typo.body1" Style="color:#345D9D; opacity:0.8; font-weight:600;">(@(_totalLtcBlocksFound > 0 ? _totalLtcBlocksFound.ToString("N0") : "–"))</MudText>
                 </div>
             </MudPaper>
         </MudItem>
@@ -265,9 +292,13 @@
 
         @* ── Zeile 4: Finanzen ── *@
         @{
-            var totalBlocks = _totalBlocksFound;
-            var historicalUsd = _recentBlocks.Where(b => b.DogePriceUsdAtFind > 0).Sum(b => b.DogePriceUsdAtFind * DogeBlockReward);
-            var currentUsd = _dogePrice is not null ? totalBlocks * DogeBlockReward * _dogePrice.UsdPrice : 0m;
+            var totalBlocks    = _totalBlocksFound;
+            var historicalUsd  = _recentBlocks.Where(b => b.Chain != "LTC" && b.DogePriceUsdAtFind > 0).Sum(b => b.DogePriceUsdAtFind * DogeBlockReward);
+            var currentUsd     = _dogePrice is not null ? totalBlocks * DogeBlockReward * _dogePrice.UsdPrice : 0m;
+
+            var totalLtcBlocks    = _totalLtcBlocksFound;
+            var ltcHistoricalUsd  = _recentBlocks.Where(b => b.Chain == "LTC" && b.LtcPriceUsdAtFind > 0).Sum(b => b.LtcPriceUsdAtFind * LtcBlockReward);
+            var ltcCurrentUsd     = _ltcPrice is not null ? totalLtcBlocks * LtcBlockReward * _ltcPrice.UsdPrice : 0m;
         }
 
         @* DOGE: Price · Per Block · Block Reward *@
@@ -280,15 +311,13 @@
                         <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
                     </MudTooltip>
                 </div>
-
-                @* Price · Per Block *@
                 <div class="d-flex align-center gap-3 flex-wrap">
                     <div>
                         <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:1px;">Price</MudText>
                         <MudText Typo="Typo.h5" Style="color:#FFD700; font-weight:700; white-space:nowrap;">
                             @(_dogePrice is not null ? $"${_dogePrice.UsdPrice:F4}" : "–")
                         </MudText>
-                    </div> 
+                    </div>
                     <div style="width:1px; background:rgba(255,255,255,0.08); align-self:stretch; margin:0 8px;"></div>
                     <div>
                         <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:1px;">Per Block</MudText>
@@ -297,11 +326,10 @@
                         </MudText>
                     </div>
                 </div>
-
             </MudPaper>
         </MudItem>
 
-        @* Total Block Reward *@
+        @* DOGE Total Block Reward *@
         <MudItem xs="12" sm="6" md="8">
             <StatCard Icon="@Icons.Material.Filled.Savings"
                       Title="Total Block Reward"
@@ -313,6 +341,46 @@
                       Color="#4caf50"
                       Tooltip="Total DOGE from all blocks (blocks × 10,000). Hist. USD: sum of USD value at the moment each block was found. Now USD: same DOGE at current price." />
         </MudItem>
+
+        @* LTC: Price · Per Block · Block Reward *@
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                <div class="d-flex align-center gap-2 mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.MonetizationOn" Style="color:#345D9D; font-size:1.4rem;" />
+                    <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">LTC <span style="opacity:0.4; font-weight:400;">·</span> 6.25 LTC block reward</MudText>
+                    <MudTooltip Text="LTC price updated hourly via CoinPaprika. Block reward is currently 6.25 LTC (next halving ~August 2027). Per Block = price × 6.25 LTC." Placement="Placement.Top" Arrow="true">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                    </MudTooltip>
+                </div>
+                <div class="d-flex align-center gap-3 flex-wrap">
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:1px;">Price</MudText>
+                        <MudText Typo="Typo.h5" Style="color:#345D9D; font-weight:700; white-space:nowrap;">
+                            @(_ltcPrice is not null ? $"${_ltcPrice.UsdPrice:F2}" : "–")
+                        </MudText>
+                    </div>
+                    <div style="width:1px; background:rgba(255,255,255,0.08); align-self:stretch; margin:0 8px;"></div>
+                    <div>
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="display:block; margin-bottom:1px;">Per Block</MudText>
+                        <MudText Typo="Typo.h5" Style="color:#345D9D; font-weight:700; white-space:nowrap;">
+                            @(_ltcPrice is not null ? $"${LtcBlockReward * _ltcPrice.UsdPrice:F2}" : "–")
+                        </MudText>
+                    </div>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        @* LTC Total Block Reward *@
+        <MudItem xs="12" sm="6" md="8">
+            <StatCard Icon="@Icons.Material.Filled.Savings"
+                      Title="Total Block Reward"
+                      Value="@($"{totalLtcBlocks * LtcBlockReward:N2} LTC")"
+                      SecondaryValue="@(ltcHistoricalUsd > 0 ? $"${ltcHistoricalUsd:N2}" : "–")"
+                      SecondaryLabel="Hist. USD"
+                      TertiaryValue="@(_ltcPrice is not null && totalLtcBlocks > 0 ? $"${ltcCurrentUsd:N2}" : "–")"
+                      TertiaryLabel="Now USD"
+                      Color="#4caf50"
+                      Tooltip="Total LTC from all blocks (blocks × 6.25). Hist. USD: sum of USD value at the moment each block was found. Now USD: same LTC at current price." /></MudItem>
 
         @* ── Farblegende (auskommentiert) ──
         <MudItem xs="12">
@@ -564,15 +632,15 @@ else
                     <MudText Typo="Typo.h6" Class="mb-3" Style="color: #7e6fff;">Recent Blocks (Latest 5)</MudText>
                     @if (_recentBlocks.Count > 0)
                     {
-                        <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Height).Take(5)" Dense="true" Hover="true"
+                        <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Time).Take(5)" Dense="true" Hover="true"
                                   Style="background: transparent;" Class="pool-blocks-table"
                                   GroupBy="@_blockGroupDef" Breakpoint="Breakpoint.Sm">
                             <HeaderContent>
+                                <MudTh Style="color: #7e6fff;">Coin</MudTh>
                                 <MudTh Style="color: #7e6fff;">Height</MudTh>
                                 <MudTh Style="color: #7e6fff;">Hash</MudTh>
                                 <MudTh Style="color: #7e6fff;">Time</MudTh>
                                 <MudTh Style="color: #7e6fff;">Reward (USD)</MudTh>
-                                <MudTh Style="color: #7e6fff;">Confirmations</MudTh>
                                 <MudTh Style="color: #7e6fff;">Verify</MudTh>
                             </HeaderContent>
                             <GroupHeaderTemplate>
@@ -581,40 +649,45 @@ else
                                 </MudTh>
                             </GroupHeaderTemplate>
                             <RowTemplate>
-                                <MudTd DataLabel="Height">
-                                    <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
-                                             Style="color: #4EE0FC;">@context.Height</MudLink>
-                                </MudTd>
-                                <MudTd DataLabel="Hash">
-                                    <span style="font-family: monospace; font-size: 0.75rem; color: #4EE0FC;">
-                                        @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 12 ? context.Hash[..8] + "…" + context.Hash[^4..] : context.Hash)
-                                    </span>
-                                </MudTd>
-                                <MudTd DataLabel="Time" Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("MM-dd HH:mm")</MudTd>
-                                <MudTd DataLabel="Reward (USD)" Style="color: #4caf50; font-size: 0.8rem;">
-                                    @(context.DogePriceUsdAtFind > 0
-                                        ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
-                                        : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
-                                </MudTd>
-                                <MudTd DataLabel="Confirmations">
-                                    @{ var conf = _networkStats?.BestBlockHeight > 0 && context.Height > 0
-                                           ? _networkStats!.BestBlockHeight - context.Height + 1 : (long?)null; }
-                                    @if (conf is null)
+                                <MudTd DataLabel="Coin">
+                                    @if (context.Chain == "LTC")
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Pending</MudChip>
-                                    }
-                                    else if (conf >= 100)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">@($"{conf:N0}")</MudChip>
+                                        <MudChip T="string" Size="Size.Small" Style="background:#345D9D; color:#fff; font-weight:700; font-size:0.7rem; height:20px;">LTC</MudChip>
                                     }
                                     else
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">@($"{conf:N0}")</MudChip>
+                                        <MudChip T="string" Size="Size.Small" Style="background:#c8a400; color:#fff; font-weight:700; font-size:0.7rem; height:20px;">DOGE</MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Height">
+                                    <MudLink Href="@(context.Chain == "LTC" ? $"https://blockchair.com/litecoin/block/{context.Height}" : $"https://dogechain.info/block/{context.Height}")"
+                                             Target="_blank" Style="color: #4EE0FC;">@context.Height</MudLink>
+                                </MudTd>
+                                <MudTd DataLabel="Hash">
+                                    <span style="font-family: monospace; font-size: 0.875rem; color: #4EE0FC;">
+                                        @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 12 ? context.Hash[..8] + "…" + context.Hash[^4..] : context.Hash)
+                                    </span>
+                                </MudTd>
+                                <MudTd DataLabel="Time" Style="font-size: 0.875rem;">@context.Time.ToLocalTime().ToString("MM-dd HH:mm")</MudTd>
+                                <MudTd DataLabel="Reward (USD)" Style="color: #4caf50; font-size: 0.875rem;">
+                                    @if (context.Chain == "LTC")
+                                    {
+                                        @(context.LtcPriceUsdAtFind > 0
+                                            ? $"${LtcBlockReward * context.LtcPriceUsdAtFind:F2}"
+                                            : _ltcPrice is not null ? $"${LtcBlockReward * _ltcPrice.UsdPrice:F2}" : "–")
+                                    }
+                                    else
+                                    {
+                                        @(context.DogePriceUsdAtFind > 0
+                                            ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
+                                            : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
                                     }
                                 </MudTd>
                                 <MudTd DataLabel="Verify">
-                                    <MudLink Href="@($"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")" Target="_blank"
-                                             Style="color: #7e6fff;">
+                                    <MudLink Href="@(context.Chain == "LTC"
+                                                    ? $"https://blockchair.com/litecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}"
+                                                    : $"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")"
+                                             Target="_blank" Style="color: #7e6fff;">
                                         <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1.3rem;" />
                                     </MudLink>
                                 </MudTd>
@@ -682,16 +755,17 @@ else
             <MudPaper Class="glass-card pa-4 mb-4" Elevation="0">
                 <div class="d-flex align-center justify-space-between mb-3">
                     <MudText Typo="Typo.h6" Style="color: #7e6fff;">All Blocks (@_recentBlocks.Count total)</MudText>
-                    <MudTextField @bind-Value="_allBlocksSearch" Placeholder="Search height, hash, worker, epoch…"
+                    <MudTextField @bind-Value="_allBlocksSearch" Placeholder="Search height, hash, worker, epoch, coin…"
                                   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                                   Immediate="true" Clearable="true" Variant="Variant.Outlined"
                                   Margin="Margin.Dense" Style="max-width: 320px; margin-left: auto;" />
                 </div>
-                <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Height)" Dense="true" Hover="true"
+                <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Time)" Dense="true" Hover="true"
                           Style="background: transparent;" @bind-RowsPerPage="_allBlocksPageSize"
                           GroupBy="@_blockGroupDef" Filter="@(b => AllBlocksFilter(b))"
                           Breakpoint="Breakpoint.Sm">
                     <HeaderContent>
+                        <MudTh Style="color: #7e6fff;">Coin</MudTh>
                         <MudTh Style="color: #7e6fff;">Height</MudTh>
                         <MudTh Style="color: #7e6fff;">Hash</MudTh>
                         <MudTh Style="color: #7e6fff;">Worker</MudTh>
@@ -701,51 +775,81 @@ else
                         <MudTh Style="color: #7e6fff;">Verify</MudTh>
                     </HeaderContent>
                     <GroupHeaderTemplate>
-                        <MudTh colspan="7" Style="background: rgba(78,224,252,0.10); padding: 4px 12px; border-left: 3px solid #4EE0FC;">
-                            <MudText Typo="Typo.subtitle2" Style="color: #4EE0FC;">Epoch @context.Key</MudText>
+                        <MudTh colspan="8" Style="background: rgba(78,224,252,0.10); padding: 4px 12px; border-left: 3px solid #4EE0FC;">
+                            <MudText Typo="Typo.subtitle2" Style="color: #4EE0FC;">
+                                @(context.Key is int k && k > 0 ? $"Epoch {k}" : "Epoch –")
+                            </MudText>
                         </MudTh>
                     </GroupHeaderTemplate>
                     <RowTemplate>
+                        <MudTd DataLabel="Coin">
+                            @if (context.Chain == "LTC")
+                            {
+                                <MudChip T="string" Size="Size.Small" Style="background:#345D9D; color:#fff; font-weight:700; font-size:0.7rem; height:20px;">LTC</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Style="background:#c8a400; color:#fff; font-weight:700; font-size:0.7rem; height:20px;">DOGE</MudChip>
+                            }
+                        </MudTd>
                         <MudTd DataLabel="Height">
-                            <MudLink Href="@($"https://dogechain.info/block/{context.Height}")" Target="_blank"
-                                     Style="color: #4EE0FC;">@context.Height</MudLink>
+                            <MudLink Href="@(context.Chain == "LTC" ? $"https://blockchair.com/litecoin/block/{context.Height}" : $"https://dogechain.info/block/{context.Height}")"
+                                     Target="_blank" Style="color: #4EE0FC;">@context.Height</MudLink>
                         </MudTd>
                         <MudTd DataLabel="Hash">
-                            <span style="font-family: monospace; font-size: 0.75rem; color: #4EE0FC;">
+                            <span style="font-family: monospace; font-size: 0.875rem; color: #4EE0FC;">
                                 @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 16 ? context.Hash[..12] + "…" + context.Hash[^4..] : context.Hash)
                             </span>
                         </MudTd>
                         <MudTd DataLabel="Worker">
-                            <MudLink Href="@($"https://dogechain.info/address/{context.Worker}")" Target="_blank"
-                                     Style="color: #7e6fff; font-family: monospace; font-size: 0.75rem;">
+                            <MudLink Href="@(context.Chain == "LTC" ? $"https://blockchair.com/litecoin/address/{context.Worker}" : $"https://dogechain.info/address/{context.Worker}")"
+                                     Target="_blank" Style="color: #7e6fff; font-family: monospace; font-size: 0.875rem;">
                                 @(string.IsNullOrEmpty(context.Worker) ? "–" : context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
                             </MudLink>
                         </MudTd>
-                        <MudTd DataLabel="Time" Style="font-size: 0.8rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
-                        <MudTd DataLabel="Reward (USD)" Style="color: #4caf50; font-size: 0.8rem;">
-                            @(context.DogePriceUsdAtFind > 0
-                                ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
-                                : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
-                        </MudTd>
-                        <MudTd DataLabel="Confirmations">
-                            @{ var confFull = _networkStats?.BestBlockHeight > 0 && context.Height > 0
-                                   ? _networkStats!.BestBlockHeight - context.Height + 1 : (long?)null; }
-                            @if (confFull is null)
+                        <MudTd DataLabel="Time" Style="font-size: 0.875rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd DataLabel="Reward (USD)" Style="color: #4caf50; font-size: 0.875rem;">
+                            @if (context.Chain == "LTC")
                             {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">Pending</MudChip>
-                            }
-                            else if (confFull >= 100)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Success">@($"{confFull:N0}")</MudChip>
+                                @(context.LtcPriceUsdAtFind > 0
+                                    ? $"${LtcBlockReward * context.LtcPriceUsdAtFind:F2}"
+                                    : _ltcPrice is not null ? $"${LtcBlockReward * _ltcPrice.UsdPrice:F2}" : "–")
                             }
                             else
                             {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">@($"{confFull:N0}")</MudChip>
+                                @(context.DogePriceUsdAtFind > 0
+                                    ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
+                                    : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Confirmations">
+                            @if (context.Chain == "LTC")
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default">–</MudChip>
+                            }
+                            else
+                            {
+                                var confFull = _networkStats?.BestBlockHeight > 0 && context.Height > 0
+                                    ? _networkStats!.BestBlockHeight - context.Height + 1 : (long?)null;
+                                if (confFull is null)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Warning">Pending</MudChip>
+                                }
+                                else if (confFull >= 100)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success">@($"{confFull:N0}")</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Warning">@($"{confFull:N0}")</MudChip>
+                                }
                             }
                         </MudTd>
                         <MudTd DataLabel="Verify">
-                            <MudLink Href="@($"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")" Target="_blank"
-                                     Style="color: #7e6fff;">
+                            <MudLink Href="@(context.Chain == "LTC"
+                                            ? $"https://blockchair.com/litecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}"
+                                            : $"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")"
+                                     Target="_blank" Style="color: #7e6fff;">
                                 <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1.3rem;" />
                             </MudLink>
                         </MudTd>
@@ -919,9 +1023,9 @@ else
 
         <MudDivider Class="my-6" />
 
-        <MudText Typo="Typo.h6" Class="mb-1" Style="color:#7e6fff;">ASIC Miner Profitability (Scrypt / DOGE)</MudText>
+        <MudText Typo="Typo.h6" Class="mb-1" Style="color:#7e6fff;">ASIC Miner Profitability (Scrypt / DOGE + LTC)</MudText>
         <MudText Typo="Typo.caption" Class="dim-text mb-4 d-block">
-            Revenue estimated from live DOGE price · Specs from Bitmain datasheets · Profit changes with your power cost
+            Revenue estimated from live prices · Scrypt miners earn DOGE + LTC simultaneously via merged mining · Specs from Bitmain datasheets
         </MudText>
 
         @* Settings bar *@
@@ -938,7 +1042,7 @@ else
                                      Adornment="Adornment.End"
                                      AdornmentText="$/kWh" />
                 </MudItem>
-                <MudItem xs="12" sm="4" md="3" Class="d-flex align-center">
+                <MudItem xs="12" sm="4" md="3" Class="d-flex align-center gap-4">
                     @if (_dogePrice is not null)
                     {
                         <div>
@@ -946,10 +1050,18 @@ else
                             <MudText Typo="Typo.body1" Style="color:#FFD700; font-weight:700;">$@_dogePrice.UsdPrice.ToString("F5")</MudText>
                         </div>
                     }
+                    @if (_ltcPrice is not null)
+                    {
+                        <div>
+                            name="LTC price"
+                            <MudText Typo="Typo.caption" Class="dim-text">LTC price</MudText>
+                            <MudText Typo="Typo.body1" Style="color:#345D9D; font-weight:700;">$@_ltcPrice.UsdPrice.ToString("F2")</MudText>
+                        </div>
+                    }
                 </MudItem>
                 <MudItem xs="12" sm="4" md="6" Class="d-flex align-center">
                     <MudText Typo="Typo.caption" Class="dim-text">
-                        Revenue = block reward × blocks/day estimate × DOGE price.
+                        Revenue = block reward × blocks/day × price. DOGE: 10,000/block, 1440/day. LTC: 6.25/block, 576/day.
                         Actual earnings depend on pool luck and network difficulty.
                     </MudText>
                 </MudItem>
@@ -964,7 +1076,8 @@ else
                     <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem;">Model</MudTh>
                     <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Hashrate</MudTh>
                     <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Power</MudTh>
-                    <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Revenue 24h</MudTh>
+                    <MudTh Style="color:#FFD700; font-size:0.75rem; text-align:right;">DOGE Rev. 24h</MudTh>
+                    <MudTh Style="color:#345D9D; font-size:0.75rem; text-align:right;">LTC Rev. 24h</MudTh>
                     <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Profit 24h</MudTh>
                     <MudTh Style="color:var(--mud-palette-text-secondary); font-size:0.75rem; text-align:right;">Break-even</MudTh>
                 </HeaderContent>
@@ -972,20 +1085,23 @@ else
                     <MudTd DataLabel="Model" Style="font-size:0.85rem; font-weight:600;">@context.Model</MudTd>
                     <MudTd DataLabel="Hashrate" Style="text-align:right; font-size:0.85rem;">@($"{context.HashrateGHs / 1000.0:F2} GH/s")</MudTd>
                     <MudTd DataLabel="Power" Style="text-align:right; font-size:0.85rem; color:var(--mud-palette-text-secondary);">@context.PowerWatts W</MudTd>
-                    <MudTd DataLabel="Revenue 24h" Style="text-align:right; font-size:0.85rem; font-weight:600; color:#FFD700;">
-                        @(context.Revenue24hUsd > 0 ? $"${context.Revenue24hUsd:F2}" : "–")
+                    <MudTd DataLabel="DOGE Rev. 24h" Style="text-align:right; font-size:0.85rem; font-weight:600; color:#FFD700;">
+                        @(context.DogeRevenue24hUsd > 0 ? $"${context.DogeRevenue24hUsd:F2}" : "–")
+                    </MudTd>
+                    <MudTd DataLabel="LTC Rev. 24h" Style="text-align:right; font-size:0.85rem; font-weight:600; color:#345D9D;">
+                        @(context.LtcRevenue24hUsd > 0 ? $"${context.LtcRevenue24hUsd:F2}" : "–")
                     </MudTd>
                     <MudTd DataLabel="Profit 24h" Style="@($"text-align:right; font-size:0.9rem; font-weight:700; color:{(context.Profit24hUsd >= 0 ? "#4caf50" : "#f44336")};")">
-                        @(context.Revenue24hUsd > 0 ? (context.Profit24hUsd >= 0 ? $"+${context.Profit24hUsd:F2}" : $"-${Math.Abs(context.Profit24hUsd):F2}") : "–")
+                        @(context.TotalRevenue24hUsd > 0 ? (context.Profit24hUsd >= 0 ? $"+${context.Profit24hUsd:F2}" : $"-${Math.Abs(context.Profit24hUsd):F2}") : "–")
                     </MudTd>
                     <MudTd DataLabel="Break-even" Style="text-align:right; font-size:0.82rem; color:var(--mud-palette-text-secondary);">
-                        @(context.Revenue24hUsd > 0 ? $"{context.BreakevenKwh:F3} $/kWh" : "–")
+                        @(context.TotalRevenue24hUsd > 0 ? $"{context.BreakevenKwh:F3} $/kWh" : "–")
                     </MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
         <MudText Typo="Typo.caption" Class="dim-text mt-2 d-block">
-            Profit = Revenue − (Power × 24h × $/kWh) · Network hashrate: @(_networkStats is not null ? $"{_networkStats.NetworkHashrate / 1_000_000_000_000.0:F2} TH/s" : "–")
+            Profit = (DOGE + LTC Revenue) − (Power × 24h × $/kWh) · Network hashrate: @(_networkStats is not null ? $"{_networkStats.NetworkHashrate / 1_000_000_000_000.0:F2} TH/s" : "–")
         </MudText>
 
 
@@ -1011,10 +1127,12 @@ else
     private System.Threading.Timer? _refreshTimer;
 
     private const decimal DogeBlockReward = 10_000m;
+    private const decimal LtcBlockReward  = 6.25m;   // next halving ~August 2027
 
     private HashrateSnapshot? _latest;
     private PoolLiveStats? _poolStats;
     private QuPriceStats? _quPrice;
+    private LtcPriceStats? _ltcPrice;
     private double _quBonusPct = 53.0;
     private double _quPriceManual = 0.0;
 
@@ -1030,6 +1148,13 @@ else
     private int _currentEpochBlocksConfirmed;
     private int _currentEpochTasksDistributed;
     private int _totalSharesValid;
+    // LTC block totals
+    private int _totalLtcBlocksFound;
+    private int _totalLtcBlocksConfirmed;
+    private int _currentEpochLtcBlocksFound;
+    private int _currentEpochLtcBlocksConfirmed;
+    private int _peakLtcBlocksFound,     _peakLtcBlocksFoundEpoch;
+    private int _peakLtcBlocksConfirmed, _peakLtcBlocksConfirmedEpoch;
 
     // Epoch peak = highest single-epoch value ever recorded (with epoch number)
     private int _peakPoolAccepted,      _peakPoolAcceptedEpoch;
@@ -1059,7 +1184,7 @@ else
     private bool _blockTrackingReady = false;
 
     // Pool-specific fields
-    private int _allBlocksPageSize = 10;
+    private int _allBlocksPageSize = 25;
     private string _allBlocksSearch = string.Empty;
 
     private bool AllBlocksFilter(PoolBlock b)
@@ -1069,7 +1194,8 @@ else
         return b.Height.ToString().Contains(s, StringComparison.OrdinalIgnoreCase)
             || (!string.IsNullOrEmpty(b.Hash) && b.Hash.Contains(s, StringComparison.OrdinalIgnoreCase))
             || (!string.IsNullOrEmpty(b.Worker) && b.Worker.Contains(s, StringComparison.OrdinalIgnoreCase))
-            || b.QubicEpoch.ToString().Contains(s, StringComparison.OrdinalIgnoreCase);
+            || b.QubicEpoch.ToString().Contains(s, StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrEmpty(b.Chain) && b.Chain.Contains(s, StringComparison.OrdinalIgnoreCase));
     }
     private readonly TableGroupDefinition<PoolBlock> _blockGroupDef = new()
     {
@@ -1155,6 +1281,7 @@ else
             _quPriceManual = (double)_quPrice.UsdPrice;
         _networkStats = await Api.GetNetworkStatsAsync();
         _dogePrice = await Api.GetDogePriceAsync();
+        _ltcPrice  = await Api.GetLtcPriceAsync();
         _recentBlocks = await Api.GetPoolBlocksAsync();
         _latestEpochSummary = await Api.GetLatestEpochSummaryAsync();
         _allEpochSummaries  = await Api.GetAllEpochSummariesAsync();
@@ -1173,17 +1300,24 @@ else
         _totalSolutionsStale     = (at?.TotalSolutionsStale     ?? 0) + (re?.TotalSolutionsStale     ?? 0);
         _totalTasksDistributed        = (at?.TotalTasksDistributed ?? 0) + (re?.TotalTasksDistributed ?? 0);
         _currentEpochTasksDistributed = _latestEpochSummary?.TotalTasksDistributed ?? 0;
-        _totalBlocksFound     = _recentBlocks.Count;
-        _totalBlocksConfirmed = _recentBlocks.Count(b => b.Confirmed);
+        var dogeBlocks = _recentBlocks.Where(b => b.Chain != "LTC").ToList();
+        var ltcBlocks  = _recentBlocks.Where(b => b.Chain == "LTC").ToList();
+
+        _totalBlocksFound     = dogeBlocks.Count;
+        _totalBlocksConfirmed = dogeBlocks.Count(b => b.Confirmed);
+        _totalLtcBlocksFound     = ltcBlocks.Count;
+        _totalLtcBlocksConfirmed = ltcBlocks.Count(b => b.Confirmed);
         _totalSharesValid     = (at?.TotalSharesValid ?? 0) + (re?.SharesValid ?? 0);
 
         // Current epoch — direct count from pool_blocks
         var curEpoch = _latest?.QubicEpoch ?? 0;
-        _currentEpochBlocksFound     = curEpoch > 0 ? _recentBlocks.Count(b => b.QubicEpoch == curEpoch) : 0;
-        _currentEpochBlocksConfirmed = curEpoch > 0 ? _recentBlocks.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0;
+        _currentEpochBlocksFound        = curEpoch > 0 ? dogeBlocks.Count(b => b.QubicEpoch == curEpoch) : 0;
+        _currentEpochBlocksConfirmed    = curEpoch > 0 ? dogeBlocks.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0;
+        _currentEpochLtcBlocksFound     = curEpoch > 0 ? ltcBlocks.Count(b => b.QubicEpoch == curEpoch) : 0;
+        _currentEpochLtcBlocksConfirmed = curEpoch > 0 ? ltcBlocks.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0;
 
-        // Best epoch — group pool_blocks by epoch, find epoch with most blocks
-        var epochGroups = _recentBlocks.Where(b => b.QubicEpoch > 0).GroupBy(b => b.QubicEpoch).ToList();
+        // Best epoch — DOGE
+        var epochGroups = dogeBlocks.Where(b => b.QubicEpoch > 0).GroupBy(b => b.QubicEpoch).ToList();
         if (epochGroups.Count > 0)
         {
             var bestFound     = epochGroups.MaxBy(g => g.Count())!;
@@ -1192,6 +1326,18 @@ else
             _peakBlocksFoundEpoch     = bestFound.Key;
             _peakBlocksConfirmed      = bestConfirmed.Count(b => b.Confirmed);
             _peakBlocksConfirmedEpoch = bestConfirmed.Key;
+        }
+
+        // Best epoch — LTC
+        var ltcEpochGroups = ltcBlocks.Where(b => b.QubicEpoch > 0).GroupBy(b => b.QubicEpoch).ToList();
+        if (ltcEpochGroups.Count > 0)
+        {
+            var bestLtcFound     = ltcEpochGroups.MaxBy(g => g.Count())!;
+            var bestLtcConfirmed = ltcEpochGroups.MaxBy(g => g.Count(b => b.Confirmed))!;
+            _peakLtcBlocksFound          = bestLtcFound.Count();
+            _peakLtcBlocksFoundEpoch     = bestLtcFound.Key;
+            _peakLtcBlocksConfirmed      = bestLtcConfirmed.Count(b => b.Confirmed);
+            _peakLtcBlocksConfirmedEpoch = bestLtcConfirmed.Key;
         }
 
         // Epoch peak = highest single-epoch value ever; running epoch competes with finalized peaks
@@ -1292,26 +1438,42 @@ _lastRefresh = DateTimeOffset.UtcNow;
     {
         if (_recentBlocks.Count == 0) return;
 
-        var byEpoch = _recentBlocks
+        var allEpochs = _recentBlocks
             .Where(b => b.QubicEpoch > 0)
-            .GroupBy(b => b.QubicEpoch)
-            .OrderBy(g => g.Key)
+            .Select(b => b.QubicEpoch)
+            .Distinct()
+            .OrderBy(e => e)
             .ToList();
 
-        if (byEpoch.Count == 0) return;
+        if (allEpochs.Count == 0) return;
 
-        _poolEpochLabels = byEpoch.Select(g => $"Ep {g.Key}").ToArray();
+        var dogeByEpoch = _recentBlocks.Where(b => b.Chain != "LTC" && b.QubicEpoch > 0)
+            .GroupBy(b => b.QubicEpoch).ToDictionary(g => g.Key, g => g.ToList());
+        var ltcByEpoch = _recentBlocks.Where(b => b.Chain == "LTC" && b.QubicEpoch > 0)
+            .GroupBy(b => b.QubicEpoch).ToDictionary(g => g.Key, g => g.ToList());
+
+        _poolEpochLabels = allEpochs.Select(e => $"Ep {e}").ToArray();
         _epochBlockSeries =
         [
             new ChartSeries<double>
             {
-                Name = "Found",
-                Data = byEpoch.Select(g => (double)g.Count()).ToArray()
+                Name = "DOGE Found",
+                Data = allEpochs.Select(e => dogeByEpoch.TryGetValue(e, out var g) ? (double)g.Count : 0.0).ToArray()
             },
             new ChartSeries<double>
             {
-                Name = "Confirmed",
-                Data = byEpoch.Select(g => (double)g.Count(b => b.Confirmed)).ToArray()
+                Name = "DOGE Confirmed",
+                Data = allEpochs.Select(e => dogeByEpoch.TryGetValue(e, out var g) ? (double)g.Count(b => b.Confirmed) : 0.0).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "LTC Found",
+                Data = allEpochs.Select(e => ltcByEpoch.TryGetValue(e, out var g) ? (double)g.Count : 0.0).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "LTC Confirmed",
+                Data = allEpochs.Select(e => ltcByEpoch.TryGetValue(e, out var g) ? (double)g.Count(b => b.Confirmed) : 0.0).ToArray()
             }
         ];
     }
@@ -1374,27 +1536,46 @@ _lastRefresh = DateTimeOffset.UtcNow;
     ];
 
     private record L7Row(string Model, int HashrateGHs, int PowerWatts,
-        double Revenue24hUsd, double Profit24hUsd, double BreakevenKwh);
+        double DogeRevenue24hUsd, double LtcRevenue24hUsd,
+        double Profit24hUsd, double BreakevenKwh)
+    {
+        public double TotalRevenue24hUsd => DogeRevenue24hUsd + LtcRevenue24hUsd;
+    }
 
     private List<L7Row> GetL7Profitability()
     {
         // DOGE: ~10,000 DOGE block reward, ~1 block/min = 1440 blocks/day network-wide
-        // Miner share = minerHashrate / networkHashrate
-        const double dogePerBlock = 10_000.0;
-        const double blocksPerDay = 1440.0;
-        double networkGHs = _networkStats?.NetworkHashrate / 1_000_000_000.0 ?? 0;
-        double dogeUsd    = _dogePrice is not null ? (double)_dogePrice.UsdPrice : 0;
+        const double dogePerBlock    = 10_000.0;
+        const double dogeBlocksPerDay = 1440.0;
+        // LTC: 6.25 LTC block reward, ~2.5 min block time = 576 blocks/day network-wide
+        const double ltcPerBlock     = 6.25;
+        const double ltcBlocksPerDay = 576.0;
+
+        double dogeNetworkGHs = _networkStats?.NetworkHashrate / 1_000_000_000.0 ?? 0;
+        double dogeUsd = _dogePrice is not null ? (double)_dogePrice.UsdPrice : 0;
+        double ltcUsd  = _ltcPrice  is not null ? (double)_ltcPrice.UsdPrice  : 0;
 
         return _l7Specs.Select(s =>
         {
             double minerGHs = s.HashrateGHs / 1000.0;  // MH/s → GH/s
-            double revenue = networkGHs > 0 && dogeUsd > 0
-                ? (minerGHs / networkGHs) * blocksPerDay * dogePerBlock * dogeUsd
+
+            // DOGE revenue uses network hashrate from blockchair
+            double dogeRevenue = dogeNetworkGHs > 0 && dogeUsd > 0
+                ? (minerGHs / dogeNetworkGHs) * dogeBlocksPerDay * dogePerBlock * dogeUsd
                 : 0;
+
+            // LTC uses same hashrate (merged mining) but LTC network hashrate
+            // Approximate LTC network as same order of magnitude as DOGE (both Scrypt)
+            // Use dogeNetworkGHs as proxy since merged mining shares the same hashrate
+            double ltcRevenue = dogeNetworkGHs > 0 && ltcUsd > 0
+                ? (minerGHs / dogeNetworkGHs) * ltcBlocksPerDay * ltcPerBlock * ltcUsd
+                : 0;
+
+            double totalRevenue = dogeRevenue + ltcRevenue;
             double powerCost = s.PowerWatts / 1000.0 * 24 * _profPowerCost;
-            double profit    = revenue > 0 ? revenue - powerCost : 0;
-            double breakeven = revenue > 0 ? revenue / (s.PowerWatts / 1000.0 * 24) : 0;
-            return new L7Row(s.Model, s.HashrateGHs, s.PowerWatts, revenue, profit, breakeven);
+            double profit    = totalRevenue > 0 ? totalRevenue - powerCost : 0;
+            double breakeven = totalRevenue > 0 ? totalRevenue / (s.PowerWatts / 1000.0 * 24) : 0;
+            return new L7Row(s.Model, s.HashrateGHs, s.PowerWatts, dogeRevenue, ltcRevenue, profit, breakeven);
         }).ToList();
     }
 

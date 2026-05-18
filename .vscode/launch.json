@@ -2,20 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Watch + Chrome (F5)",
-            "type": "chrome",
-            "request": "launch",
-            "url": "http://localhost:5180",
-            "preLaunchTask": "watch",
-            "presentation": {
-                "order": 1
-            }
-        },
-        {
-            "name": "Start App (build only)",
+            "name": "Server (dotnet watch)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "watch-server",
             "program": "${workspaceFolder}/qubic_doge_stats/bin/Debug/net10.0/qubic_doge_stats.dll",
             "args": [],
             "cwd": "${workspaceFolder}/qubic_doge_stats",
@@ -31,7 +21,26 @@
                 "/Views": "${workspaceFolder}/Views"
             },
             "presentation": {
-                "order": 2
+                "hidden": true
+            }
+        },
+        {
+            "name": "Browser (Chrome)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5180",
+            "presentation": {
+                "hidden": true
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Start App (F5)",
+            "configurations": ["Server (dotnet watch)", "Browser (Chrome)"],
+            "stopAll": true,
+            "presentation": {
+                "order": 1
             }
         }
     ]

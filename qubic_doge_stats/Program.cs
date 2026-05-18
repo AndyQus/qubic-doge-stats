@@ -67,6 +67,16 @@ builder.Services.AddHttpClient<QuPriceClient>(client =>
 });
 
 builder.Services.AddHostedService<QuPricePollingWorker>();
+
+// LTC (Litecoin) price HTTP client (CoinPaprika - free, no API key)
+// Block reward: 6.25 LTC (next halving ~August 2027)
+builder.Services.AddHttpClient<LtcPriceClient>(client =>
+{
+    client.BaseAddress = new Uri("https://api.coinpaprika.com/v1/tickers/ltc-litecoin");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
+builder.Services.AddHostedService<LtcPricePollingWorker>();
 builder.Services.AddHostedService<DataBackfillService>();
 
 // Mining Pool Ranking HTTP client (miningpoolstats.stream)
@@ -112,6 +122,18 @@ app.UseAntiforgery();
 app.UseCors();
 
 app.MapApiEndpoints();
+// Prevent blazor.boot.json from being cached so the browser always fetches fresh hashes
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.Value?.Contains("blazor.boot.json") == true)
+    {
+        context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        context.Response.Headers["Pragma"] = "no-cache";
+        context.Response.Headers["Expires"] = "0";
+    }
+    await next();
+});
+
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()

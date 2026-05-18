@@ -29,15 +29,19 @@ public class DogeStatsPollingWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("DogeStats polling worker started. Interval: {Interval}s", _intervalSeconds);
-
-        await PollAsync(stoppingToken);
-
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_intervalSeconds));
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
         {
+            _logger.LogInformation("DogeStats polling worker started. Interval: {Interval}s", _intervalSeconds);
+
             await PollAsync(stoppingToken);
+
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_intervalSeconds));
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                await PollAsync(stoppingToken);
+            }
         }
+        catch (OperationCanceledException) { }
     }
 
     private async Task PollAsync(CancellationToken ct)

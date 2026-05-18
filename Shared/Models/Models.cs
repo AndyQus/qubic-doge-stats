@@ -90,11 +90,12 @@ public class TickInfo
     public long InitialTick { get; set; }
 }
 
-// PoolBlock — one confirmed or pending DOGE block find, stored permanently
+// PoolBlock — one confirmed or pending DOGE or LTC block find, stored permanently
 public class PoolBlock
 {
     [BsonId(autoId: true)]
     public ObjectId Id { get; set; } = ObjectId.NewObjectId();
+    public string Chain { get; set; } = "DOGE";  // "DOGE" or "LTC"
     public long Height { get; set; }
     public string Hash { get; set; } = "";
     public string Worker { get; set; } = "";
@@ -102,6 +103,7 @@ public class PoolBlock
     public bool Confirmed { get; set; }
     public int QubicEpoch { get; set; }
     public decimal DogePriceUsdAtFind { get; set; }  // DOGE/USD price at the moment this block was first recorded
+    public decimal LtcPriceUsdAtFind { get; set; }   // LTC/USD price at the moment this block was first recorded (only for LTC blocks)
 }
 
 // Live stats from pool.json (not persisted, just passed through to frontend)
@@ -110,49 +112,93 @@ public class PoolLiveStats
     public DateTimeOffset SessionStart { get; set; }
     public int SharesValid { get; set; }
     public int SharesInvalid { get; set; }
+    public double SharesPerMinute { get; set; }
+    // DOGE (auxiliary chain)
     public int BlocksFound { get; set; }
     public int BlocksConfirmed { get; set; }
-    public DateTimeOffset? LastShareTime { get; set; }
     public DateTimeOffset? LastBlockTime { get; set; }
     public long? LastBlockHeight { get; set; }
+    // LTC (primary chain)
+    public int LtcBlocksFound { get; set; }
+    public int LtcBlocksConfirmed { get; set; }
+    public DateTimeOffset? LtcLastBlockTime { get; set; }
+    public long? LtcLastBlockHeight { get; set; }
+    public DateTimeOffset? LastShareTime { get; set; }
 }
 
-// pool.json API response model — matches real API structure
-// {"uptime":34933,"shares":{"valid":61283,"invalid":129},"blocks":{"found":0,"confirmed":0},
-//  "lastShare":"2026-04-01T10:31:24.050Z","lastBlock":null,"recentBlocks":[]}
+// pool.json API response model — matches https://doge-stats.qubic.org/pool.json
 public class PoolJsonResponse
 {
     public long Uptime { get; set; }
+    public PoolJsonChains? Chains { get; set; }
+    public long CurrentHeight { get; set; }
+    public long CurrentHeightAuxiliary { get; set; }
+    public PoolJsonNetwork? Network { get; set; }
     public PoolJsonShares Shares { get; set; } = new();
-    public PoolJsonBlocks Blocks { get; set; } = new();
+    public PoolJsonBlocksRoot Blocks { get; set; } = new();
     public DateTimeOffset? LastShare { get; set; }
     public PoolJsonLastBlock? LastBlock { get; set; }
+    public PoolJsonLastBlock? LastBlockAuxiliary { get; set; }
     public List<PoolJsonBlock> RecentBlocks { get; set; } = [];
+}
+
+public class PoolJsonChains
+{
+    public string Primary { get; set; } = "";
+    public string Auxiliary { get; set; } = "";
+}
+
+public class PoolJsonNetwork
+{
+    public PoolJsonNetworkChain? Primary { get; set; }
+    public PoolJsonNetworkChain? Auxiliary { get; set; }
+}
+
+public class PoolJsonNetworkChain
+{
+    public string Coin { get; set; } = "";
+    public double Difficulty { get; set; }
+    public long Hashrate { get; set; }
 }
 
 public class PoolJsonShares
 {
     public int Valid { get; set; }
     public int Invalid { get; set; }
+    public double PerMinute { get; set; }
 }
 
-public class PoolJsonBlocks
+public class PoolJsonBlocksRoot
 {
+    public PoolJsonBlocksChain? Primary { get; set; }
+    public PoolJsonBlocksChain? Auxiliary { get; set; }
+    // Legacy root-level fields (equals primary)
+    public int Found { get; set; }
+    public int Confirmed { get; set; }
+}
+
+public class PoolJsonBlocksChain
+{
+    public string Coin { get; set; } = "";
     public int Found { get; set; }
     public int Confirmed { get; set; }
 }
 
 public class PoolJsonLastBlock
 {
+    public string Coin { get; set; } = "";
     public long Height { get; set; }
     public DateTimeOffset Time { get; set; }
 }
 
 public class PoolJsonBlock
 {
+    public string Chain { get; set; } = "";   // "primary" (LTC) or "auxiliary" (DOGE)
+    public string Coin { get; set; } = "";    // "LTC" or "DOGE"
     public long Height { get; set; }
     public string Hash { get; set; } = "";
     public string Worker { get; set; } = "";
+    public string Payout { get; set; } = "";
     public DateTimeOffset Time { get; set; }
     public bool Confirmed { get; set; }
 }
@@ -174,6 +220,13 @@ public class DogePriceStats
 
 // QU (Qubic) price from CoinPaprika
 public class QuPriceStats
+{
+    public decimal UsdPrice { get; set; }
+    public DateTimeOffset FetchedAt { get; set; }
+}
+
+// LTC (Litecoin) price from CoinPaprika
+public class LtcPriceStats
 {
     public decimal UsdPrice { get; set; }
     public DateTimeOffset FetchedAt { get; set; }
@@ -220,6 +273,10 @@ public class EpochSummary
     public int BlocksConfirmed { get; set; }
     public int SharesValid { get; set; }
 
+    // LTC blocks (from pool_blocks collection, Chain == "LTC")
+    public int LtcBlocksFound { get; set; }
+    public int LtcBlocksConfirmed { get; set; }
+
     public bool IsFinalized { get; set; }  // true once epoch has ended
 
     // DOGE mining pool rank (lower = better; 0 = not yet recorded)
@@ -250,6 +307,8 @@ public class AllTimeStats
     public int TotalSolutionsStale { get; set; }
     public int TotalTasksDistributed { get; set; }
     public int TotalSharesValid { get; set; }
+    public int TotalLtcBlocksFound { get; set; }
+    public int TotalLtcBlocksConfirmed { get; set; }
 
     // Peak per-epoch counter values (highest single-epoch value ever recorded)
     public int PeakPoolAccepted { get; set; }
@@ -268,6 +327,8 @@ public class AllTimeStats
     public int PeakBlocksConfirmedEpoch { get; set; }
     public int PeakSharesValid { get; set; }
     public int PeakSharesValidEpoch { get; set; }
+    public int PeakLtcBlocksFound { get; set; }
+    public int PeakLtcBlocksFoundEpoch { get; set; }
 
     // DOGE mining pool rank (lower = better; 0 = not yet recorded)
     public int BestRank { get; set; }

@@ -96,8 +96,10 @@ public class EpochSummaryService
             }
 
             // Live block counts — never let them decrease due to race conditions at startup
-            summary.BlocksFound     = Math.Max(summary.BlocksFound,     _db.GetBlocksFoundByEpoch(snapshot.QubicEpoch));
-            summary.BlocksConfirmed = Math.Max(summary.BlocksConfirmed, _db.GetBlocksConfirmedByEpoch(snapshot.QubicEpoch));
+            summary.BlocksFound     = Math.Max(summary.BlocksFound,     _db.GetBlocksFoundByEpoch(snapshot.QubicEpoch, "DOGE"));
+            summary.BlocksConfirmed = Math.Max(summary.BlocksConfirmed, _db.GetBlocksConfirmedByEpoch(snapshot.QubicEpoch, "DOGE"));
+            summary.LtcBlocksFound     = Math.Max(summary.LtcBlocksFound,     _db.GetBlocksFoundByEpoch(snapshot.QubicEpoch, "LTC"));
+            summary.LtcBlocksConfirmed = Math.Max(summary.LtcBlocksConfirmed, _db.GetBlocksConfirmedByEpoch(snapshot.QubicEpoch, "LTC"));
             summary.EpochEnd = snapshot.Timestamp;
 
             _db.UpsertEpochSummary(summary);
@@ -151,8 +153,10 @@ public class EpochSummaryService
             summary.AvgHashrateDisplay = FormatHashrate(summary.AvgHashrate);
 
             // Blocks
-            summary.BlocksFound     = db.GetBlocksFoundByEpoch(epochNumber);
-            summary.BlocksConfirmed = db.GetBlocksConfirmedByEpoch(epochNumber);
+            summary.BlocksFound        = db.GetBlocksFoundByEpoch(epochNumber, "DOGE");
+            summary.BlocksConfirmed    = db.GetBlocksConfirmedByEpoch(epochNumber, "DOGE");
+            summary.LtcBlocksFound     = db.GetBlocksFoundByEpoch(epochNumber, "LTC");
+            summary.LtcBlocksConfirmed = db.GetBlocksConfirmedByEpoch(epochNumber, "LTC");
 
             // Set baseline to LAST snapshot so UpdateLive continues streaming from the correct point
             summary.BaselineSet = true;
@@ -203,6 +207,10 @@ public class EpochSummaryService
             }
 
             var summary = _db.GetEpochSummary(epochNumber) ?? new EpochSummary { EpochNumber = epochNumber };
+
+            // Finalize LTC block counts
+            summary.LtcBlocksFound     = _db.GetBlocksFoundByEpoch(epochNumber, "LTC");
+            summary.LtcBlocksConfirmed = _db.GetBlocksConfirmedByEpoch(epochNumber, "LTC");
 
             var avgHashrate = (long)snapshots.Average(s => s.Hashrate);
             summary.AvgHashrate = avgHashrate;
@@ -263,6 +271,8 @@ public class EpochSummaryService
         { existing.PeakBlocksConfirmed = epoch.BlocksConfirmed; existing.PeakBlocksConfirmedEpoch = epoch.EpochNumber; changed = true; }
         if (epoch.SharesValid > existing.PeakSharesValid)
         { existing.PeakSharesValid = epoch.SharesValid; existing.PeakSharesValidEpoch = epoch.EpochNumber; changed = true; }
+        if (epoch.LtcBlocksFound > existing.PeakLtcBlocksFound)
+        { existing.PeakLtcBlocksFound = epoch.LtcBlocksFound; existing.PeakLtcBlocksFoundEpoch = epoch.EpochNumber; changed = true; }
 
         if (changed)
         {
@@ -275,12 +285,14 @@ public class EpochSummaryService
     {
         var existing = _db.GetAllTimeStats() ?? new AllTimeStats();
 
-        existing.TotalPoolAccepted += epoch.TotalPoolAccepted;
-        existing.TotalPoolRejected += epoch.TotalPoolRejected;
+        existing.TotalPoolAccepted      += epoch.TotalPoolAccepted;
+        existing.TotalPoolRejected      += epoch.TotalPoolRejected;
         existing.TotalSolutionsAccepted += epoch.TotalSolutionsAccepted;
-        existing.TotalSolutionsStale += epoch.TotalSolutionsStale;
-        existing.TotalTasksDistributed += epoch.TotalTasksDistributed;
-        existing.TotalSharesValid += epoch.SharesValid;
+        existing.TotalSolutionsStale    += epoch.TotalSolutionsStale;
+        existing.TotalTasksDistributed  += epoch.TotalTasksDistributed;
+        existing.TotalSharesValid       += epoch.SharesValid;
+        existing.TotalLtcBlocksFound    += epoch.LtcBlocksFound;
+        existing.TotalLtcBlocksConfirmed += epoch.LtcBlocksConfirmed;
         existing.UpdatedAt = DateTimeOffset.UtcNow;
 
         _db.UpsertAllTimeStats(existing);

@@ -31,6 +31,7 @@ public class LiteDbContext : IDisposable
 
         var poolCol = _db.GetCollection<PoolBlock>("pool_blocks");
         poolCol.EnsureIndex(x => x.Height);
+        poolCol.EnsureIndex(x => x.Chain);
         poolCol.EnsureIndex(x => x.QubicEpoch);
 
         var epochCol = _db.GetCollection<EpochSummary>("epoch_summaries");
@@ -76,8 +77,8 @@ public class LiteDbContext : IDisposable
         lock (_lock)
         {
             var col = _db.GetCollection<PoolBlock>("pool_blocks");
-            // Deduplicate by Height; prefer a record with a known hash over one without
-            var existing = col.FindOne(x => x.Height == block.Height);
+            // Deduplicate by (Chain, Height) — height alone is not unique across chains
+            var existing = col.FindOne(x => x.Chain == block.Chain && x.Height == block.Height);
             if (existing is null)
             {
                 col.Insert(block);
@@ -94,6 +95,8 @@ public class LiteDbContext : IDisposable
                 // Never overwrite a recorded price with zero
                 if (block.DogePriceUsdAtFind == 0 && existing.DogePriceUsdAtFind > 0)
                     block.DogePriceUsdAtFind = existing.DogePriceUsdAtFind;
+                if (block.LtcPriceUsdAtFind == 0 && existing.LtcPriceUsdAtFind > 0)
+                    block.LtcPriceUsdAtFind = existing.LtcPriceUsdAtFind;
                 // Never overwrite a valid epoch — once correctly set, epoch is immutable
                 if (existing.QubicEpoch > 0)
                     block.QubicEpoch = existing.QubicEpoch;
@@ -217,12 +220,12 @@ public class LiteDbContext : IDisposable
         }
     }
 
-    public void FixPoolBlockEpoch(long height, int correctEpoch)
+    public void FixPoolBlockEpoch(long height, int correctEpoch, string chain = "DOGE")
     {
         lock (_lock)
         {
             var col = _db.GetCollection<PoolBlock>("pool_blocks");
-            var block = col.FindOne(x => x.Height == height);
+            var block = col.FindOne(x => x.Chain == chain && x.Height == height);
             if (block is not null && block.QubicEpoch != correctEpoch)
             {
                 block.QubicEpoch = correctEpoch;
@@ -285,21 +288,21 @@ public class LiteDbContext : IDisposable
         }
     }
 
-    public int GetBlocksFoundByEpoch(int epochNumber)
+    public int GetBlocksFoundByEpoch(int epochNumber, string chain = "DOGE")
     {
         lock (_lock)
         {
             return _db.GetCollection<PoolBlock>("pool_blocks")
-                .Count(x => x.QubicEpoch == epochNumber);
+                .Count(x => x.QubicEpoch == epochNumber && x.Chain == chain);
         }
     }
 
-    public int GetBlocksConfirmedByEpoch(int epochNumber)
+    public int GetBlocksConfirmedByEpoch(int epochNumber, string chain = "DOGE")
     {
         lock (_lock)
         {
             return _db.GetCollection<PoolBlock>("pool_blocks")
-                .Count(x => x.QubicEpoch == epochNumber && x.Confirmed);
+                .Count(x => x.QubicEpoch == epochNumber && x.Chain == chain && x.Confirmed);
         }
     }
 
@@ -352,6 +355,11 @@ public class LiteDbContext : IDisposable
             { stats.PeakBlocksConfirmed = s.BlocksConfirmed; stats.PeakBlocksConfirmedEpoch = s.EpochNumber; }
             if (s.SharesValid > stats.PeakSharesValid)
             { stats.PeakSharesValid = s.SharesValid; stats.PeakSharesValidEpoch = s.EpochNumber; }
+            if (s.LtcBlocksFound > stats.PeakLtcBlocksFound)
+            { stats.PeakLtcBlocksFound = s.LtcBlocksFound; stats.PeakLtcBlocksFoundEpoch = s.EpochNumber; }
+
+            stats.TotalLtcBlocksFound     += s.LtcBlocksFound;
+            stats.TotalLtcBlocksConfirmed += s.LtcBlocksConfirmed;
         }
         UpsertAllTimeStats(stats);
     }

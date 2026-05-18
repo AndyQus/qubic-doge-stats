@@ -19,10 +19,14 @@ public class PoolPollingWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await PollAsync(stoppingToken);
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(60));
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
+        {
             await PollAsync(stoppingToken);
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(60));
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+                await PollAsync(stoppingToken);
+        }
+        catch (OperationCanceledException) { }
     }
 
     private async Task PollAsync(CancellationToken ct)
@@ -40,43 +44,66 @@ public class PoolPollingWorker : BackgroundService
                 return;
             }
 
-            var currentPrice = DogePricePollingWorker.LatestPrice?.UsdPrice ?? 0m;
+            var currentDogePrice = DogePricePollingWorker.LatestPrice?.UsdPrice ?? 0m;
+            var currentLtcPrice  = LtcPricePollingWorker.LatestPrice?.UsdPrice ?? 0m;
 
             var currentEpoch = DogeStatsPollingWorker.CurrentEpoch;
 
             // Only persist blocks once the epoch is known — saves with epoch=0 would be
             // invisible to GetBlocksFoundByEpoch() and corrupt epoch summaries.
-            // Blocks are deduplicated by Height so they will be picked up on the next poll.
+            // Blocks are deduplicated by (Chain, Height) so they will be picked up on the next poll.
             if (currentEpoch > 0)
             {
                 foreach (var rb in response.RecentBlocks)
                 {
+                    var isDoge = !string.Equals(rb.Coin, "LTC", StringComparison.OrdinalIgnoreCase);
+                    var chain  = isDoge ? "DOGE" : "LTC";
                     db.UpsertPoolBlock(new PoolBlock
                     {
+                        Chain = chain,
                         Height = rb.Height,
                         Hash = rb.Hash,
                         Worker = rb.Worker,
                         Time = rb.Time,
                         Confirmed = rb.Confirmed,
                         QubicEpoch = currentEpoch,
-                        DogePriceUsdAtFind = currentPrice
+                        DogePriceUsdAtFind = isDoge ? currentDogePrice : 0m,
+                        LtcPriceUsdAtFind  = isDoge ? 0m : currentLtcPrice
                     });
                 }
 
-                // Fallback: recentBlocks can be empty if the block is older than the pool's sliding window.
-                // Use lastBlock to ensure it is always persisted (hash/worker will be empty until recentBlocks catches up).
-                if (response.LastBlock is { } lb &&
-                    response.RecentBlocks.All(rb => rb.Height != lb.Height))
+                // Fallback for DOGE lastBlock
+                if (response.LastBlockAuxiliary is { } lbDoge &&
+                    response.RecentBlocks.All(rb => !(rb.Coin == "DOGE" && rb.Height == lbDoge.Height)))
                 {
                     db.UpsertPoolBlock(new PoolBlock
                     {
-                        Height = lb.Height,
+                        Chain = "DOGE",
+                        Height = lbDoge.Height,
                         Hash = "",
                         Worker = "",
-                        Time = lb.Time,
-                        Confirmed = response.Blocks.Confirmed > 0,
+                        Time = lbDoge.Time,
+                        Confirmed = response.Blocks.Auxiliary?.Confirmed > 0,
                         QubicEpoch = currentEpoch,
-                        DogePriceUsdAtFind = currentPrice
+                        DogePriceUsdAtFind = currentDogePrice
+                    });
+                }
+
+                // Fallback for LTC lastBlock
+                if (response.LastBlock is { } lbLtc &&
+                    string.Equals(lbLtc.Coin, "LTC", StringComparison.OrdinalIgnoreCase) &&
+                    response.RecentBlocks.All(rb => !(rb.Coin == "LTC" && rb.Height == lbLtc.Height)))
+                {
+                    db.UpsertPoolBlock(new PoolBlock
+                    {
+                        Chain = "LTC",
+                        Height = lbLtc.Height,
+                        Hash = "",
+                        Worker = "",
+                        Time = lbLtc.Time,
+                        Confirmed = response.Blocks.Primary?.Confirmed > 0,
+                        QubicEpoch = currentEpoch,
+                        LtcPriceUsdAtFind = currentLtcPrice
                     });
                 }
             }
@@ -85,16 +112,26 @@ public class PoolPollingWorker : BackgroundService
                 _logger.LogWarning("Epoch not yet initialized — skipping pool block DB write (will retry next poll)");
             }
 
+            var dogeBlocks = response.Blocks.Auxiliary;
+            var ltcBlocks  = response.Blocks.Primary;
+
             LatestStats = new PoolLiveStats
             {
-                SessionStart = DateTimeOffset.UtcNow.AddSeconds(-response.Uptime),
-                SharesValid = response.Shares.Valid,
-                SharesInvalid = response.Shares.Invalid,
-                BlocksFound = response.Blocks.Found,
-                BlocksConfirmed = response.Blocks.Confirmed,
-                LastShareTime = response.LastShare,
-                LastBlockTime = response.LastBlock?.Time,
-                LastBlockHeight = response.LastBlock?.Height
+                SessionStart      = DateTimeOffset.UtcNow.AddSeconds(-response.Uptime),
+                SharesValid       = response.Shares.Valid,
+                SharesInvalid     = response.Shares.Invalid,
+                SharesPerMinute   = response.Shares.PerMinute,
+                // DOGE
+                BlocksFound       = dogeBlocks?.Found    ?? response.Blocks.Found,
+                BlocksConfirmed   = dogeBlocks?.Confirmed ?? response.Blocks.Confirmed,
+                LastBlockTime     = response.LastBlockAuxiliary?.Time ?? response.LastBlock?.Time,
+                LastBlockHeight   = response.LastBlockAuxiliary?.Height ?? response.LastBlock?.Height,
+                // LTC
+                LtcBlocksFound    = ltcBlocks?.Found    ?? 0,
+                LtcBlocksConfirmed = ltcBlocks?.Confirmed ?? 0,
+                LtcLastBlockTime  = response.LastBlock?.Coin == "LTC" ? response.LastBlock.Time : null,
+                LtcLastBlockHeight = response.LastBlock?.Coin == "LTC" ? response.LastBlock.Height : null,
+                LastShareTime     = response.LastShare
             };
 
             _logger.LogDebug("Pool stats updated: {BlocksFound} blocks, {Shares} shares", response.Blocks.Found, response.Shares.Valid);

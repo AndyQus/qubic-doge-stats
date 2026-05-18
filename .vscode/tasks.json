@@ -14,15 +14,35 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "watch",
-            "type": "shell",
-            "command": "dotnet watch run --project ${workspaceFolder}/qubic_doge_stats/qubic_doge_stats.csproj",
-            "dependsOn": ["build"],
+            "label": "watch-server",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/qubic_doge_stats/qubic_doge_stats.csproj"
+            ],
             "isBackground": true,
-            "problemMatcher": "$msCompile",
+            "problemMatcher": {
+                "pattern": [
+                    {
+                        "regexp": ".",
+                        "file": 1,
+                        "location": 2,
+                        "message": 3
+                    }
+                ],
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "dotnet watch",
+                    "endsPattern": "Now listening on:"
+                }
+            },
             "presentation": {
                 "reveal": "always",
-                "panel": "dedicated"
+                "panel": "dedicated",
+                "label": "dotnet watch"
             }
         }
     ]

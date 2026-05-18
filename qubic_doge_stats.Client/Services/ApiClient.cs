@@ -75,6 +75,12 @@ public class ApiClient
         catch { return null; }
     }
 
+    public async Task<LtcPriceStats?> GetLtcPriceAsync()
+    {
+        try { return await _http.GetFromJsonAsync<LtcPriceStats>("/api/ltc/price"); }
+        catch { return null; }
+    }
+
     public async Task<List<TopDonor>> GetTopDonorsAsync(int limit = 50)
     {
         try { return await _http.GetFromJsonAsync<List<TopDonor>>($"/api/donations/top?limit={limit}") ?? []; }

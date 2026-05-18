@@ -3,14 +3,14 @@ using qubic_doge_stats.Shared.Models;
 
 namespace qubic_doge_stats.Workers;
 
-public class DogePricePollingWorker : BackgroundService
+public class LtcPricePollingWorker : BackgroundService
 {
     private readonly IServiceProvider _services;
-    private readonly ILogger<DogePricePollingWorker> _logger;
+    private readonly ILogger<LtcPricePollingWorker> _logger;
 
-    public static DogePriceStats? LatestPrice { get; private set; }
+    public static LtcPriceStats? LatestPrice { get; private set; }
 
-    public DogePricePollingWorker(IServiceProvider services, ILogger<DogePricePollingWorker> logger)
+    public LtcPricePollingWorker(IServiceProvider services, ILogger<LtcPricePollingWorker> logger)
     {
         _services = services;
         _logger = logger;
@@ -33,19 +33,19 @@ public class DogePricePollingWorker : BackgroundService
         try
         {
             using var scope = _services.CreateScope();
-            var client = scope.ServiceProvider.GetRequiredService<DogePriceClient>();
+            var client = scope.ServiceProvider.GetRequiredService<LtcPriceClient>();
             var price = await client.FetchAsync(ct);
             if (price is null)
             {
-                _logger.LogWarning("DOGE price fetch returned no data");
+                _logger.LogWarning("LTC price fetch returned no data");
                 return;
             }
             LatestPrice = price;
-            _logger.LogDebug("DOGE price updated: ${Usd:F4} USD", price.UsdPrice);
+            _logger.LogDebug("LTC price updated: ${Usd:F2} USD", price.UsdPrice);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during DOGE price polling");
+            _logger.LogError(ex, "Error during LTC price polling");
         }
     }
 }

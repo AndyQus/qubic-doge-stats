@@ -1,6 +1,6 @@
 # Qubic Doge Stats
 
-Real-time mining statistics dashboard for **Qubic × Dogecoin** mining operations.
+Real-time mining statistics dashboard for **Qubic × Dogecoin/Litecoin** merged mining operations.
 
 Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://doge-stats.qubic.org) API and stored locally. A Blazor WebAssembly frontend visualizes hashrate, pool stats, epoch history, Dogecoin block finds, and more.
 
@@ -15,7 +15,9 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
 - Pool stats: accepted / rejected / valid shares with epoch peaks and all-time totals
 - Solutions tracking: accepted, stale, tasks distributed — with epoch peaks and all-time totals
 - Connected peers and active tasks
+- **LTC Merged Mining** — Litecoin blocks found alongside DOGE via merged mining (Scrypt); separate LTC stats, price (USD), block reward tracking
 - **DOGE price** (USD) — polled hourly from CoinPaprika
+- **LTC price** (USD) — polled hourly from CoinPaprika
 - Qubic epoch tracking with automatic epoch-change detection
 - **Epoch & Total stats** on every panel — peak single-epoch value + cumulative all-time total
 - **DataBackfillService** — retroactively assigns correct Qubic epochs to historical snapshots on startup; configurable via `DataBackfill:Enabled`
@@ -29,7 +31,7 @@ Data is polled every 60 seconds from the public [doge-stats.qubic.org](https://d
   - Live pool stats: blocks found/confirmed, shares valid/invalid, session uptime
   - Blocks per epoch bar chart
   - **Recent Blocks** — latest 5 blocks, grouped by epoch, with Dogechain links
-  - **All Blocks** — pageable table (10/25/50/100 rows), grouped by epoch, live search by height/hash/worker/epoch
+  - **All Blocks** — pageable table (25/50/100 rows), grouped by epoch, live search by height/hash/worker/epoch/coin (DOGE or LTC), with Coin chip per row
 - **Dark mode** by default (toggle available); iOS-style glassmorphism panels
 - Fully self-hosted via Docker
 

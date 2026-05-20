@@ -148,7 +148,10 @@
                                     <td style="padding:7px 0; text-align:right; font-family:monospace; color:#f59e0b; font-weight:600;">
                                         @donor.TotalQu.ToString("N0")
                                     </td>
-                                    <td style="padding:7px 0; text-align:right; color:#6b7280;">@donor.Date</td>
+                                    <td style="padding:7px 0; text-align:right; color:#6b7280;">
+                                        <span class="d-none d-sm-inline">@donor.Date</span>
+                                        <span class="d-sm-none">@(donor.Date.Length == 10 ? donor.Date[8..10] + "/" + donor.Date[5..7] : donor.Date)</span>
+                                    </td>
                                 </tr>
                             }
                         </tbody>

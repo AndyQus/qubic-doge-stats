@@ -117,7 +117,6 @@ else
     app.UseResponseCompression();
 }
 
-app.UseStaticFiles();
 app.UseAntiforgery();
 app.UseCors();
 

@@ -4,7 +4,7 @@
 
 <PageTitle>Support · DOGE Mining Stats</PageTitle>
 
-<div class="support-wrapper">
+<div class="support-wrapper" style="max-width:1400px; margin:0 auto;">
 
 <div class="mb-6 text-center">
     <MudText Typo="Typo.h5" Style="font-weight:700; color:#4EE0FC; text-align:center;">Support</MudText>
@@ -119,9 +119,9 @@
             }
             else
             {
-                <div style="max-height:520px; overflow-y:auto;">
+                <div>
                     <table style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-                        <thead style="position:sticky; top:0; background:#1a2332;">
+                        <thead>
                             <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
                                 <th style="text-align:left; padding-bottom:8px; color:#9ca3af; font-weight:500;">#</th>
                                 <th style="text-align:left; padding-bottom:8px; color:#9ca3af; font-weight:500;">Rank</th>
@@ -184,11 +184,12 @@
     private record RankInfo(string Icon, string Name, string Color, string Amount, string Desc);
     private static readonly RankInfo[] _ranks =
     [
-        new("⚡", "Quantum Spark",   "#a78bfa", "≥ 1,000,000 QU",   "Every spark starts a fire"),
-        new("🗡️", "Qubic Knight",    "#38bdf8", "≥ 10,000,000 QU",  "A warrior for the ecosystem"),
-        new("⚔️", "Crypto Avenger",  "#4EE0FC", "≥ 25,000,000 QU",  "Defending decentralization"),
-        new("🛡️", "Block Guardian",  "#4ade80", "≥ 50,000,000 QU",  "Protecting the network"),
-        new("👑", "Chain Legend",    "#FFD700", "≥ 100,000,000 QU", "Forever immortalized"),
+        new("⚡", "Quantum Spark",  "#a78bfa", "≥ 1,000,000 QU",     "Every spark starts a fire"),
+        new("🗡️", "Qubic Knight",   "#38bdf8", "≥ 10,000,000 QU",    "A warrior for the ecosystem"),
+        new("⚔️", "Crypto Avenger", "#4EE0FC", "≥ 50,000,000 QU",    "Defending decentralization"),
+        new("🛡️", "Block Guardian", "#4ade80", "≥ 100,000,000 QU",   "Protecting the network"),
+        new("💎", "Diamond Node",   "#b9f2ff", "≥ 500,000,000 QU",   "The backbone of the network"),
+        new("👑", "Chain Legend",   "#FFD700", "≥ 1,000,000,000 QU", "Forever immortalized"),
     ];
 
     protected override async Task OnInitializedAsync()
@@ -198,11 +199,12 @@
 
     private static RankInfo GetRank(long totalQu) => totalQu switch
     {
-        >= 100_000_000 => _ranks[4],
-        >= 50_000_000  => _ranks[3],
-        >= 25_000_000  => _ranks[2],
-        >= 10_000_000  => _ranks[1],
-        _              => _ranks[0],
+        >= 1_000_000_000 => _ranks[5],
+        >= 500_000_000   => _ranks[4],
+        >= 100_000_000   => _ranks[3],
+        >= 50_000_000    => _ranks[2],
+        >= 10_000_000    => _ranks[1],
+        _                => _ranks[0],
     };
 
     private async Task CopyAddressAsync()

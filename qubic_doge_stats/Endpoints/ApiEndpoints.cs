@@ -1,6 +1,7 @@
 using qubic_doge_stats.Infrastructure;
 using qubic_doge_stats.Workers;
 using qubic_doge_stats.Shared.Models;
+using Microsoft.Extensions.Logging;
 
 namespace qubic_doge_stats.Endpoints;
 
@@ -97,5 +98,13 @@ public static class ApiEndpoints
 
         api.MapGet("/donations/top", (LiteDbContext db, int limit = 50) =>
             Results.Ok(db.GetTopDonors(Math.Min(limit, 100))));
+
+        api.MapGet("/logs", (InMemoryLogBuffer logs, int limit = 200, string? level = null) =>
+        {
+            var entries = logs.GetAll();
+            if (level is not null)
+                entries = entries.Where(e => e.Level.Equals(level, StringComparison.OrdinalIgnoreCase)).ToList();
+            return Results.Ok(entries.TakeLast(Math.Min(limit, 500)));
+        });
     }
 }

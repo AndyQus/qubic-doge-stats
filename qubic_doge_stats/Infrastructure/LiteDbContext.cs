@@ -27,45 +27,71 @@ public class LiteDbContext : IDisposable
 
     private void RepairEpoch213IfNeeded()
     {
-        var flags = _db.GetCollection("repair_flags");
-        if (flags.Exists(x => x["_id"] == "epoch213_chain_fix")) return;
+        var col     = _db.GetCollection<PoolBlock>("pool_blocks");
+        var backup  = _db.GetCollection<PoolBlock>("repair_backup_e213");
 
-        var col = _db.GetCollection<PoolBlock>("pool_blocks");
+        // Use FindAll + LINQ-to-Objects to avoid LiteDB long/int comparison issues
+        var allE213 = col.FindAll().Where(b => b.QubicEpoch == 213).ToList();
 
-        // Safety: back up ALL epoch 213 blocks before touching anything
-        // Collection repair_backup_e213 allows manual rollback if something goes wrong
-        var backup = _db.GetCollection<PoolBlock>("repair_backup_e213");
+        // Step 1: Find DOGE blocks with LTC height range (< 4_000_000) in E213
+        var wrongDogeAsLtc = allE213.Where(b => b.Chain == "DOGE" && b.Height < 4_000_000).ToList();
+
+        // Step 2: Find duplicate DOGE blocks in E213 (same Height, keep oldest)
+        var e213Doge = allE213.Where(b => b.Chain == "DOGE").OrderBy(b => b.Time).ToList();
+        var seen     = new HashSet<long>();
+        var dogeDuplicates = new List<PoolBlock>();
+        foreach (var block in e213Doge)
+        {
+            if (!seen.Add(block.Height))
+                dogeDuplicates.Add(block);
+        }
+
+        // Nothing to do — all clean
+        if (wrongDogeAsLtc.Count == 0 && dogeDuplicates.Count == 0)
+            return;
+
+        // Back up all E213 blocks before touching anything (only if not already backed up)
         if (!backup.Exists(x => x.QubicEpoch == 213))
         {
-            var allE213 = col.Find(x => x.QubicEpoch == 213).ToList();
             foreach (var b in allE213)
                 backup.Insert(new PoolBlock
                 {
-                    Chain               = b.Chain,
-                    Height              = b.Height,
-                    Hash                = b.Hash,
-                    Worker              = b.Worker,
-                    Time                = b.Time,
-                    Confirmed           = b.Confirmed,
-                    QubicEpoch          = b.QubicEpoch,
-                    DogePriceUsdAtFind  = b.DogePriceUsdAtFind,
-                    LtcPriceUsdAtFind   = b.LtcPriceUsdAtFind,
+                    Chain              = b.Chain,
+                    Height             = b.Height,
+                    Hash               = b.Hash,
+                    Worker             = b.Worker,
+                    Time               = b.Time,
+                    Confirmed          = b.Confirmed,
+                    QubicEpoch         = b.QubicEpoch,
+                    DogePriceUsdAtFind = b.DogePriceUsdAtFind,
+                    LtcPriceUsdAtFind  = b.LtcPriceUsdAtFind,
                 });
         }
 
-        // Step 1: LTC blocks misclassified as DOGE in E213 (height < 4_000_000 = LTC range)
-        var wrongDogeAsLtc = col.Find(x => x.Chain == "DOGE" && x.Height < 4_000_000 && x.QubicEpoch == 213).ToList();
+        // Fix Step 1: misclassified LTC blocks stored as DOGE
         foreach (var wrong in wrongDogeAsLtc)
         {
             var existingLtc = col.FindOne(x => x.Chain == "LTC" && x.Height == wrong.Height);
             if (existingLtc is not null)
             {
-                // Correct LTC entry already exists — delete the wrong DOGE copy
+                // Correct LTC entry already exists — move wrong DOGE copy to backup and delete
+                backup.Insert(new PoolBlock
+                {
+                    Chain              = wrong.Chain,
+                    Height             = wrong.Height,
+                    Hash               = wrong.Hash,
+                    Worker             = wrong.Worker,
+                    Time               = wrong.Time,
+                    Confirmed          = wrong.Confirmed,
+                    QubicEpoch         = wrong.QubicEpoch,
+                    DogePriceUsdAtFind = wrong.DogePriceUsdAtFind,
+                    LtcPriceUsdAtFind  = wrong.LtcPriceUsdAtFind,
+                });
                 col.Delete(wrong.Id);
             }
             else
             {
-                // No LTC entry yet — convert this block to LTC
+                // No LTC entry yet — convert in place to LTC
                 wrong.Chain = "LTC";
                 if (wrong.LtcPriceUsdAtFind == 0 && wrong.DogePriceUsdAtFind > 0)
                     wrong.LtcPriceUsdAtFind = wrong.DogePriceUsdAtFind;
@@ -74,34 +100,39 @@ public class LiteDbContext : IDisposable
             }
         }
 
-        // Step 2: Remove duplicate DOGE blocks in E213 only
-        // Keep the oldest entry (lowest Time), delete subsequent duplicates of the same Height
-        var seen = new HashSet<long>();
-        foreach (var block in col.Find(x => x.Chain == "DOGE" && x.QubicEpoch == 213).OrderBy(b => b.Time).ToList())
+        // Fix Step 2: remove DOGE duplicates — move to backup and delete
+        foreach (var dupe in dogeDuplicates)
         {
-            if (!seen.Add(block.Height))
-                col.Delete(block.Id);
+            backup.Insert(new PoolBlock
+            {
+                Chain              = dupe.Chain,
+                Height             = dupe.Height,
+                Hash               = dupe.Hash,
+                Worker             = dupe.Worker,
+                Time               = dupe.Time,
+                Confirmed          = dupe.Confirmed,
+                QubicEpoch         = dupe.QubicEpoch,
+                DogePriceUsdAtFind = dupe.DogePriceUsdAtFind,
+                LtcPriceUsdAtFind  = dupe.LtcPriceUsdAtFind,
+            });
+            col.Delete(dupe.Id);
         }
 
-        // Step 3: Rebuild EpochSummary for E213 from corrected pool_blocks
+        // Rebuild EpochSummary for E213 from corrected pool_blocks
         var summaryCol = _db.GetCollection<EpochSummary>("epoch_summaries");
         var summary213 = summaryCol.FindOne(x => x.EpochNumber == 213);
         if (summary213 is not null)
         {
-            var blocks213 = col.Find(x => x.QubicEpoch == 213).ToList();
+            var blocks213 = col.FindAll().Where(b => b.QubicEpoch == 213).ToList();
             summary213.BlocksFound        = blocks213.Count(b => b.Chain == "DOGE");
             summary213.BlocksConfirmed    = blocks213.Count(b => b.Chain == "DOGE" && b.Confirmed);
             summary213.LtcBlocksFound     = blocks213.Count(b => b.Chain == "LTC");
             summary213.LtcBlocksConfirmed = blocks213.Count(b => b.Chain == "LTC" && b.Confirmed);
             summaryCol.Update(summary213);
 
-            // Step 4: Rebuild AllTimeStats from all corrected epoch summaries
-            var allSummaries = summaryCol.FindAll().ToList();
-            RebuildAllTimeStats(allSummaries);
+            // Rebuild AllTimeStats from all corrected epoch summaries
+            RebuildAllTimeStats(summaryCol.FindAll().ToList());
         }
-
-        // Mark as done — never runs again
-        flags.Insert(new BsonDocument { ["_id"] = "epoch213_chain_fix", ["at"] = DateTime.UtcNow });
     }
 
     private void EnsureIndexes()

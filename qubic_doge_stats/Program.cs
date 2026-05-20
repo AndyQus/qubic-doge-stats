@@ -7,6 +7,11 @@ using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// In-memory log buffer — accessible via /api/logs
+var logBuffer = new InMemoryLogBuffer();
+builder.Logging.AddProvider(new InMemoryLoggerProvider(logBuffer));
+builder.Services.AddSingleton(logBuffer);
+
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 

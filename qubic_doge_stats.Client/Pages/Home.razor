@@ -430,9 +430,27 @@ else
 <MudTabs Elevation="0" TabHeaderClass="mb-4">
     <MudTabPanel Text="Hashrate" Icon="@Icons.Material.Filled.Speed">
 
-        <MudText Typo="Typo.caption" Class="mb-3 dim-text">Last updated: @_lastRefresh.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+        <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-3">
+            <MudText Typo="Typo.caption" Class="dim-text">Last updated: @_lastRefresh.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+            <div class="d-flex gap-2 flex-wrap">
+                @foreach (var cat in new[] { "All", "Live", "Epoch History", "Rankings", "Solutions & Shares" })
+                {
+                    var active = _hashrateFilter.Contains(cat);
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             OnClick="@(() => ToggleHashrateFilter(cat))"
+                             Style="@(active
+                                 ? "background:rgba(126,111,255,0.25); color:#7e6fff; border:1px solid rgba(126,111,255,0.5); cursor:pointer;"
+                                 : "background:rgba(255,255,255,0.05); color:var(--mud-palette-text-secondary); border:1px solid rgba(255,255,255,0.1); cursor:pointer;")">
+                        @cat
+                    </MudChip>
+                }
+            </div>
+        </div>
 
         @* ===== LIVE HASHRATE CHARTS (side by side) ===== *@
+        @if (ShowHashrateCategory("Live"))
+        {
         <MudGrid Class="mb-2">
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
@@ -497,8 +515,11 @@ else
                 </MudPaper>
             </MudItem>
         </MudGrid>
+        }
 
         @* ===== CURRENT EPOCH TIMELINE + AVG HASHRATE PER EPOCH (side by side) ===== *@
+        @if (ShowHashrateCategory("Epoch History"))
+        {
         <MudGrid Class="mb-2">
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
@@ -550,8 +571,180 @@ else
                 </MudPaper>
             </MudItem>
         </MudGrid>
+        }
+
+        @* ===== AVG + PEAK GROUPED BAR + POOL DIFFICULTY ===== *@
+        @if (ShowHashrateCategory("Epoch History") || ShowHashrateCategory("Live"))
+        {
+        <MudGrid Class="mb-2">
+            @if (ShowHashrateCategory("Epoch History"))
+            {
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Avg &amp; Peak Hashrate per Epoch (TH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Average vs. peak hashrate per epoch — shows how far peak exceeds the average</MudText>
+                    @if (_epochAvgPeakSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochAvgPeakSeries, _epochLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_epochAvgPeakSeries"
+                                      ChartLabels="@_epochLabels"
+                                      Width="100%" Height="280px"
+                                      ChartOptions="@_epochHashrateChartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            }
+            @if (ShowHashrateCategory("Live"))
+            {
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">Pool Difficulty (live)</MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text">Last 60 min · in millions · auto 60 s</MudText>
+                    </div>
+                    @if (_difficultyChartSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_difficultyChartSeries, _difficultyChartLabels)">
+                            <MudChart ChartType="ChartType.Line"
+                                      ChartSeries="@_difficultyChartSeries"
+                                      ChartLabels="@_difficultyChartLabels"
+                                      Width="100%" Height="280px"
+                                      ChartOptions="@_difficultyChartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            }
+        </MudGrid>
+        }
+
+        @* ===== TOP 10 EPOCHS BY PEAK + TOP 10 SNAPSHOTS ===== *@
+        @if (ShowHashrateCategory("Rankings"))
+        {
+        <MudGrid Class="mb-2">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Top 10 Epochs by Peak Hashrate (TH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Ranking of the 10 epochs with the highest peak hashrate ever recorded</MudText>
+                    @if (_top10EpochPeakSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_top10EpochPeakSeries, _top10EpochPeakLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_top10EpochPeakSeries"
+                                      ChartLabels="@_top10EpochPeakLabels"
+                                      Width="100%" Height="280px"
+                                      ChartOptions="@_epochHashrateChartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Top 10 Days by Peak Hashrate (TH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">The 10 days with the highest peak hashrate ever recorded</MudText>
+                    @if (_top10SnapshotSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_top10SnapshotSeries, _top10SnapshotLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_top10SnapshotSeries"
+                                      ChartLabels="@_top10SnapshotLabels"
+                                      Width="100%" Height="280px"
+                                      ChartOptions="@_epochHashrateChartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+        }
+
+        @* ===== NETWORK SHARE + NETWORK HASHRATE ===== *@
+        @if (ShowHashrateCategory("Epoch History") || ShowHashrateCategory("Live"))
+        {
+        <MudGrid Class="mb-2">
+            @if (ShowHashrateCategory("Epoch History"))
+            {
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Pool Network Share per Epoch (%)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Peak share of total DOGE network hashrate per epoch</MudText>
+                    @if (_epochNetworkShareSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochNetworkShareSeries, _epochLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_epochNetworkShareSeries"
+                                      ChartLabels="@_epochLabels"
+                                      Width="100%" Height="260px"
+                                      ChartOptions="@_networkShareChartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            }
+            @if (ShowHashrateCategory("Live"))
+            {
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                        <MudText Typo="Typo.h6" Style="color: #7e6fff;">DOGE Network Hashrate (TH/s)</MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text">Last 60 min · auto 60 s</MudText>
+                    </div>
+                    @if (_networkHashrateSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_networkHashrateSeries, _networkHashrateLabels)">
+                            <MudChart ChartType="ChartType.Line"
+                                      ChartSeries="@_networkHashrateSeries"
+                                      ChartLabels="@_networkHashrateLabels"
+                                      Width="100%" Height="260px"
+                                      ChartOptions="@_chartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            }
+        </MudGrid>
+        }
 
         @* ===== SOLUTIONS + POOL SHARES PER EPOCH ===== *@
+        @if (ShowHashrateCategory("Solutions & Shares"))
+        {
         <MudGrid Class="mb-2">
             <MudItem xs="12" md="6">
                 <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
@@ -598,6 +791,7 @@ else
                 </MudPaper>
             </MudItem>
         </MudGrid>
+        }
 
     </MudTabPanel>
     <MudTabPanel Text="Blocks" Icon="@Icons.Material.Filled.ViewList">
@@ -1246,6 +1440,23 @@ else
         ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
     };
 
+    private LineChartOptions _difficultyChartOptions => new LineChartOptions
+    {
+        YAxisTicks = 1,
+        MaxNumYAxisTicks = 6,
+        YAxisFormat = "F0",
+        LineStrokeWidth = 2,
+        ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
+    };
+
+    private BarChartOptions _networkShareChartOptions => new BarChartOptions
+    {
+        YAxisTicks = 1,
+        MaxNumYAxisTicks = 8,
+        YAxisFormat = "F3",
+        ChartPalette = IsDarkMode ? new[] { "#4EE0FC" } : new[] { "#006f8a" },
+    };
+
     private BarChartOptions _epochCounterChartOptions => new BarChartOptions
     {
         YAxisTicks = 5,
@@ -1256,6 +1467,43 @@ else
     // Current epoch timeline chart
     private List<ChartSeries<double>> _epochTimelineSeries = [];
     private string[] _epochTimelineLabels = [];
+
+    // Avg + Peak per epoch (grouped bar)
+    private List<ChartSeries<double>> _epochAvgPeakSeries = [];
+
+    // Top 10 epochs by peak hashrate
+    private List<ChartSeries<double>> _top10EpochPeakSeries = [];
+    private string[] _top10EpochPeakLabels = [];
+
+    // Top 10 days by peak hashrate
+    private List<ChartSeries<double>> _top10SnapshotSeries = [];
+    private string[] _top10SnapshotLabels = [];
+
+    // Hashrate tab category filter
+    private HashSet<string> _hashrateFilter = ["All"];
+    private void ToggleHashrateFilter(string cat)
+    {
+        if (cat == "All") { _hashrateFilter = ["All"]; return; }
+        _hashrateFilter.Remove("All");
+        if (!_hashrateFilter.Add(cat))
+        {
+            _hashrateFilter.Remove(cat);
+            if (_hashrateFilter.Count == 0) _hashrateFilter = ["All"];
+        }
+    }
+    private bool ShowHashrateCategory(string cat) =>
+        _hashrateFilter.Contains("All") || _hashrateFilter.Contains(cat);
+
+    // Network share % per epoch
+    private List<ChartSeries<double>> _epochNetworkShareSeries = [];
+
+    // Pool difficulty (live 60 min)
+    private List<ChartSeries<double>> _difficultyChartSeries = [];
+    private string[] _difficultyChartLabels = [];
+
+    // DOGE network hashrate (live 60 min)
+    private List<ChartSeries<double>> _networkHashrateSeries = [];
+    private string[] _networkHashrateLabels = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -1359,6 +1607,8 @@ _lastRefresh = DateTimeOffset.UtcNow;
         BuildChartData();
         BuildEpochChartData();
         BuildEpochTimelineData();
+        BuildTop10SnapshotsChart();
+        BuildNetworkChartsData();
     }
 
     private async Task NotifyNewBlocksAsync()
@@ -1606,6 +1856,57 @@ _lastRefresh = DateTimeOffset.UtcNow;
             }
         ];
 
+        _epochAvgPeakSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Avg TH/s",
+                Data = summaries.Select(s => ToTeraHashPerSecond(s.AvgHashrate)).ToArray(),
+                TooltipYValueFormat = "F2"
+            },
+            new ChartSeries<double>
+            {
+                Name = "Peak TH/s",
+                Data = summaries.Select(s => ToTeraHashPerSecond(s.PeakHashrate)).ToArray(),
+                TooltipYValueFormat = "F2"
+            }
+        ];
+
+        // Top 10 epochs by peak hashrate
+        var top10Epochs = summaries
+            .Where(s => s.PeakHashrate > 0)
+            .OrderByDescending(s => s.PeakHashrate)
+            .Take(10)
+            .ToList();
+
+        _top10EpochPeakLabels = top10Epochs.Select(s => $"Ep {s.EpochNumber}").ToArray();
+        _top10EpochPeakSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Peak TH/s",
+                Data = top10Epochs.Select(s => ToTeraHashPerSecond(s.PeakHashrate)).ToArray(),
+                TooltipYValueFormat = "F2"
+            },
+            new ChartSeries<double>
+            {
+                Name = "Avg TH/s",
+                Data = top10Epochs.Select(s => ToTeraHashPerSecond(s.AvgHashrate)).ToArray(),
+                TooltipYValueFormat = "F2"
+            }
+        ];
+
+        // Network share % per epoch
+        _epochNetworkShareSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Peak Share %",
+                Data = summaries.Select(s => s.PeakNetworkSharePct).ToArray(),
+                TooltipYValueFormat = "F3"
+            }
+        ];
+
         _epochSolutionsDetailSeries =
         [
             new ChartSeries<double>
@@ -1691,6 +1992,63 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
         int startDow = (int)actualStart.DayOfWeek;
         _epochTimelineLabels = byDay.Select(g => allDays[(startDow + g.Key) % 7]).ToArray();
+    }
+
+    private void BuildTop10SnapshotsChart()
+    {
+        if (_fullHistory.Count == 0) return;
+
+        var top10Days = _fullHistory
+            .GroupBy(h => h.Timestamp.ToLocalTime().Date)
+            .Select(g => (Date: g.Key, Peak: g.Max(h => ToTeraHashPerSecond(h.Hashrate))))
+            .OrderByDescending(x => x.Peak)
+            .Take(10)
+            .ToList();
+
+        _top10SnapshotLabels = top10Days.Select(x => x.Date.ToString("MM-dd")).ToArray();
+        _top10SnapshotSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Peak TH/s",
+                Data = top10Days.Select(x => x.Peak).ToArray(),
+                TooltipYValueFormat = "F2"
+            }
+        ];
+    }
+
+    private void BuildNetworkChartsData()
+    {
+        if (_history.Count == 0) return;
+
+        int total = _history.Count;
+        var timeLabels = _history.Select((h, i) =>
+            (i % 10 == 0 && i < total - 5) || i == total - 1
+                ? h.Timestamp.ToLocalTime().ToString("HH:mm")
+                : ""
+        ).ToArray();
+
+        _difficultyChartSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Difficulty (M)",
+                Data = _history.Select(h => h.PoolDifficulty / 1_000_000.0).ToArray(),
+                TooltipYValueFormat = "F1"
+            }
+        ];
+        _difficultyChartLabels = timeLabels;
+
+        _networkHashrateSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Network TH/s",
+                Data = _history.Select(h => h.NetworkHashrate / 1_000_000_000_000.0).ToArray(),
+                TooltipYValueFormat = "F2"
+            }
+        ];
+        _networkHashrateLabels = timeLabels;
     }
 
     private static string ChartWrapperStyle(List<ChartSeries<double>> series, string[] labels)

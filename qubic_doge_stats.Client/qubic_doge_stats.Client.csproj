@@ -7,7 +7,7 @@
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
     <AssemblyName>qubic_doge_stats.Client</AssemblyName>
     <RootNamespace>qubic_doge_stats.Client</RootNamespace>
-    <Version>0.4.5</Version>
+    <Version>0.4.6</Version>
     <!-- Disable fingerprinting in Debug to avoid SRI hash mismatches during hot reload -->
     <WasmFingerprintAssets Condition="'$(Configuration)' == 'Debug'">false</WasmFingerprintAssets>
   </PropertyGroup>

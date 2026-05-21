@@ -573,6 +573,57 @@ else
         </MudGrid>
         }
 
+ @* ===== TOP 10 EPOCHS BY PEAK + TOP 10 SNAPSHOTS ===== *@
+        @if (ShowHashrateCategory("Rankings"))
+        {
+        <MudGrid Class="mb-2">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Top 10 Epochs by Peak Hashrate (TH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Ranking of the 10 epochs with the highest peak hashrate ever recorded</MudText>
+                    @if (_top10EpochPeakSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_top10EpochPeakSeries, _top10EpochPeakLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_top10EpochPeakSeries"
+                                      ChartLabels="@_top10EpochPeakLabels"
+                                      Width="100%" Height="280px"
+                                      ChartOptions="@_epochHashrateChartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Top 10 Days by Peak Hashrate (TH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">The 10 days with the highest peak hashrate ever recorded</MudText>
+                    @if (_top10SnapshotSeries.Count > 0)
+                    {
+                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_top10SnapshotSeries, _top10SnapshotLabels)">
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@_top10SnapshotSeries"
+                                      ChartLabels="@_top10SnapshotLabels"
+                                      Width="100%" Height="280px"
+                                      ChartOptions="@_epochHashrateChartOptions" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+        }
+        
         @* ===== AVG + PEAK GROUPED BAR + POOL DIFFICULTY ===== *@
         @if (ShowHashrateCategory("Epoch History") || ShowHashrateCategory("Live"))
         {
@@ -632,57 +683,7 @@ else
         </MudGrid>
         }
 
-        @* ===== TOP 10 EPOCHS BY PEAK + TOP 10 SNAPSHOTS ===== *@
-        @if (ShowHashrateCategory("Rankings"))
-        {
-        <MudGrid Class="mb-2">
-            <MudItem xs="12" md="6">
-                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
-                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Top 10 Epochs by Peak Hashrate (TH/s)</MudText>
-                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">Ranking of the 10 epochs with the highest peak hashrate ever recorded</MudText>
-                    @if (_top10EpochPeakSeries.Count > 0)
-                    {
-                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_top10EpochPeakSeries, _top10EpochPeakLabels)">
-                            <MudChart ChartType="ChartType.Bar"
-                                      ChartSeries="@_top10EpochPeakSeries"
-                                      ChartLabels="@_top10EpochPeakLabels"
-                                      Width="100%" Height="280px"
-                                      ChartOptions="@_epochHashrateChartOptions" />
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="d-flex justify-center align-center" style="height:280px;">
-                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                        </div>
-                    }
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="12" md="6">
-                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
-                    <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Top 10 Days by Peak Hashrate (TH/s)</MudText>
-                    <MudText Typo="Typo.caption" Class="mb-3 dim-text">The 10 days with the highest peak hashrate ever recorded</MudText>
-                    @if (_top10SnapshotSeries.Count > 0)
-                    {
-                        <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_top10SnapshotSeries, _top10SnapshotLabels)">
-                            <MudChart ChartType="ChartType.Bar"
-                                      ChartSeries="@_top10SnapshotSeries"
-                                      ChartLabels="@_top10SnapshotLabels"
-                                      Width="100%" Height="280px"
-                                      ChartOptions="@_epochHashrateChartOptions" />
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="d-flex justify-center align-center" style="height:280px;">
-                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                        </div>
-                    }
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-        }
-
+       
         @* ===== NETWORK SHARE + NETWORK HASHRATE ===== *@
         @if (ShowHashrateCategory("Epoch History") || ShowHashrateCategory("Live"))
         {

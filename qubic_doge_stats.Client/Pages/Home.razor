@@ -502,7 +502,7 @@ else
                                       ChartSeries="@_todaySeries"
                                       ChartLabels="@_todayLabels"
                                       Width="100%" Height="320px"
-                                      ChartOptions="@_chartOptions" />
+                                      ChartOptions="@_peakLineChartOptions" />
                         </div>
                     }
                     else
@@ -588,7 +588,7 @@ else
                                       ChartSeries="@_top10EpochPeakSeries"
                                       ChartLabels="@_top10EpochPeakLabels"
                                       Width="100%" Height="280px"
-                                      ChartOptions="@_epochHashrateChartOptions" />
+                                      ChartOptions="@_top10PeakChartOptions" />
                         </div>
                     }
                     else
@@ -610,7 +610,7 @@ else
                                       ChartSeries="@_top10SnapshotSeries"
                                       ChartLabels="@_top10SnapshotLabels"
                                       Width="100%" Height="280px"
-                                      ChartOptions="@_epochHashrateChartOptions" />
+                                      ChartOptions="@_top10PeakChartOptions" />
                         </div>
                     }
                     else
@@ -1465,6 +1465,26 @@ else
         ChartPalette = IsDarkMode ? _darkPalette : _lightPalette,
     };
 
+    // Avg-first, Peak-second palette: matches Avg & Peak Hashrate per Epoch chart
+    private BarChartOptions _top10PeakChartOptions => new BarChartOptions
+    {
+        YAxisTicks = 1,
+        MaxNumYAxisTicks = 10,
+        YAxisFormat = "F0",
+        ChartPalette = IsDarkMode ? new[] { "#7e6fff", "#4EE0FC", "#4caf50", "#ff9800", "#f44336" }
+                                  : new[] { "#3d1fcc", "#006f8a", "#1b5e20", "#bf3600", "#8b0000" },
+    };
+
+    private LineChartOptions _peakLineChartOptions => new LineChartOptions
+    {
+        YAxisTicks = 1,
+        MaxNumYAxisTicks = 10,
+        YAxisFormat = "F0",
+        LineStrokeWidth = 2,
+        ChartPalette = IsDarkMode ? new[] { "#4EE0FC", "#7e6fff", "#4caf50", "#ff9800", "#f44336" }
+                                  : new[] { "#006f8a", "#3d1fcc", "#1b5e20", "#bf3600", "#8b0000" },
+    };
+
     // Current epoch timeline chart
     private List<ChartSeries<double>> _epochTimelineSeries = [];
     private string[] _epochTimelineLabels = [];
@@ -1885,14 +1905,14 @@ _lastRefresh = DateTimeOffset.UtcNow;
         [
             new ChartSeries<double>
             {
-                Name = "Peak TH/s",
-                Data = top10Epochs.Select(s => ToTeraHashPerSecond(s.PeakHashrate)).ToArray(),
+                Name = "Avg TH/s",
+                Data = top10Epochs.Select(s => ToTeraHashPerSecond(s.AvgHashrate)).ToArray(),
                 TooltipYValueFormat = "F2"
             },
             new ChartSeries<double>
             {
-                Name = "Avg TH/s",
-                Data = top10Epochs.Select(s => ToTeraHashPerSecond(s.AvgHashrate)).ToArray(),
+                Name = "Peak TH/s",
+                Data = top10Epochs.Select(s => ToTeraHashPerSecond(s.PeakHashrate)).ToArray(),
                 TooltipYValueFormat = "F2"
             }
         ];

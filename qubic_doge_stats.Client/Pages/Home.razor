@@ -610,7 +610,7 @@ else
                                       ChartSeries="@_top10SnapshotSeries"
                                       ChartLabels="@_top10SnapshotLabels"
                                       Width="100%" Height="280px"
-                                      ChartOptions="@_top10PeakChartOptions" />
+                                      ChartOptions="@_singlePeakChartOptions" />
                         </div>
                     }
                     else
@@ -1473,6 +1473,15 @@ else
         YAxisFormat = "F0",
         ChartPalette = IsDarkMode ? new[] { "#7e6fff", "#4EE0FC", "#4caf50", "#ff9800", "#f44336" }
                                   : new[] { "#3d1fcc", "#006f8a", "#1b5e20", "#bf3600", "#8b0000" },
+    };
+
+    // Single-peak chart: cyan at index 0 (matches Pool Network Share color)
+    private BarChartOptions _singlePeakChartOptions => new BarChartOptions
+    {
+        YAxisTicks = 1,
+        MaxNumYAxisTicks = 10,
+        YAxisFormat = "F0",
+        ChartPalette = IsDarkMode ? new[] { "#4EE0FC" } : new[] { "#006f8a" },
     };
 
     private LineChartOptions _peakLineChartOptions => new LineChartOptions

@@ -512,7 +512,7 @@ else
         {
         <MudGrid Class="mb-2">
             <MudItem xs="12">
-                <MudPaper Class="glass-card pa-2" Elevation="0">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="overflow:visible;">
                     <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
                         <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live 24h Hashrate (TH/s)</MudText>
                         <div class="d-flex flex-column align-end">
@@ -523,15 +523,20 @@ else
                             }
                         </div>
                     </div>
-                    @if (_24hSeries.Count > 0)
+                    @if (_apex24hData.Count > 0)
                     {
-                        <div class="chart-fullwidth-wrapper" style="@ChartWrapperStyle(_24hSeries, _24hLabels)">
-                            <MudChart ChartType="ChartType.Line"
-                                      ChartSeries="@_24hSeries"
-                                      ChartLabels="@_24hLabels"
-                                      Width="100%" Height="300px"
-                                      ChartOptions="@_peakLineChartOptions" />
-                        </div>
+                        <ApexCharts.ApexChart TItem="Apex24hPoint"
+                                   Options="@_apex24hOptions"
+                                   @ref="_apex24hChart"
+                                   Height="300">
+                            <ApexCharts.ApexPointSeries TItem="Apex24hPoint"
+                                             Items="@_apex24hData"
+                                             SeriesType="ApexCharts.SeriesType.Line"
+                                             Name="TH/s"
+                                             XValue="@(p => p.Time.ToUnixTimeMilliseconds())"
+                                             YValue="@(p => (decimal)p.Value)"
+                                             OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
                     }
                     else
                     {
@@ -1640,7 +1645,13 @@ else
     // Network share % per epoch
     private List<ChartSeries<double>> _epochNetworkShareSeries = [];
 
-    // 24h hashrate chart
+    // 24h hashrate chart (ApexCharts)
+    private record Apex24hPoint(DateTimeOffset Time, double Value);
+    private List<Apex24hPoint> _apex24hData = [];
+    private ApexCharts.ApexChart<Apex24hPoint>? _apex24hChart;
+    private ApexCharts.ApexChartOptions<Apex24hPoint> _apex24hOptions = new();
+
+    // 24h hashrate chart (MudBlazor — kept for mini mobile chart)
     private List<ChartSeries<double>> _24hSeries = [];
     private string[] _24hLabels = [];
     private string[] _24hMiniLabels = [];
@@ -1660,6 +1671,7 @@ else
         Snackbar.Configuration.PreventDuplicates = false;
         Snackbar.Configuration.MaxDisplayedSnackbars = 5;
         Snackbar.Configuration.NewestOnTop = true;
+        InitApex24hOptions();
         await RefreshDataAsync();
         _refreshTimer = new System.Threading.Timer(async _ =>
         {
@@ -1951,11 +1963,11 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
         if (buckets.Count == 0) return;
 
-        // Label every 2nd bucket (= every 60 min), always show first and last
+        // Label only full hours; always show first and last bucket
         int total = buckets.Count;
         _24hLabels = buckets.Select((g, i) =>
         {
-            if (i == 0 || i == total - 1 || i % 2 == 0)
+            if (i == 0 || i == total - 1 || g.Key.Minute == 0)
                 return g.Key.ToLocalTime().ToString("HH:mm");
             return "";
         }).ToArray();
@@ -1976,6 +1988,65 @@ _lastRefresh = DateTimeOffset.UtcNow;
         ];
 
         _24hPeak = dataValues.DefaultIfEmpty(0).Max();
+
+        // ApexCharts data: use bucket timestamps directly (datetime x-axis)
+        _apex24hData = buckets
+            .Zip(dataValues, (b, v) => new Apex24hPoint(b.Key.ToLocalTime(), v))
+            .ToList();
+    }
+
+    private void InitApex24hOptions()
+    {
+        var lineColor = IsDarkMode ? "#4EE0FC" : "#006f8a";
+        var labelColor = IsDarkMode ? "rgba(255,255,255,0.55)" : "rgba(20,20,50,0.7)";
+        _apex24hOptions = new ApexCharts.ApexChartOptions<Apex24hPoint>
+        {
+            Chart = new ApexCharts.Chart
+            {
+                Background = "transparent",
+                Toolbar = new ApexCharts.Toolbar { Show = false },
+                Animations = new ApexCharts.Animations { Enabled = false },
+                ForeColor = labelColor,
+            },
+            Theme = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
+            Stroke = new ApexCharts.Stroke { Curve = ApexCharts.Curve.Smooth, Width = [2] },
+            Colors = [lineColor],
+            Grid = new ApexCharts.Grid
+            {
+                BorderColor = IsDarkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)",
+            },
+            Xaxis = new ApexCharts.XAxis
+            {
+                Type = ApexCharts.XAxisType.Datetime,
+                Labels = new ApexCharts.XAxisLabels
+                {
+                    Rotate = -45,
+                    RotateAlways = false,
+                    DatetimeFormatter = new ApexCharts.DatetimeFormatter { Hour = "HH:mm", Minute = "HH:mm" },
+                    Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                },
+                TickAmount = 12,
+            },
+            Yaxis =
+            [
+                new ApexCharts.YAxis
+                {
+                    Labels = new ApexCharts.YAxisLabels
+                    {
+                        Formatter = "function(val) { return val.toFixed(0); }",
+                        Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                    },
+                    Title = new ApexCharts.AxisTitle { Text = "TH/s" },
+                }
+            ],
+            Tooltip = new ApexCharts.Tooltip
+            {
+                X = new ApexCharts.TooltipX { Format = "HH:mm" },
+            },
+            Markers = new ApexCharts.Markers { Size = [0] },
+            Legend = new ApexCharts.Legend { Show = true },
+            Fill = new ApexCharts.Fill { Type = [ApexCharts.FillType.Solid] },
+        };
     }
 
     // ── Profitability tab ────────────────────────────────────────────────────

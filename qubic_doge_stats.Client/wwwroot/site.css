@@ -83,10 +83,16 @@
     font-size: var(--xaxis-font-size, 1.26rem) !important;
 }
 
-/* Full-width chart wrapper: compensates Y-axis offset on ALL screen sizes */
+/* Full-width chart wrapper: shift the inner mud-chart left to reclaim Y-axis dead space.
+   MudBlazor reserves ~40–50px left for the Y-axis; we pull it back with a negative margin
+   and extend the width so the chart fills the full container. */
 .chart-fullwidth-wrapper {
-    margin-left: calc(var(--yaxis-chars, 3) * 1.0rem);
-    width: calc(100% - var(--yaxis-chars, 3) * 1.0rem);
+    width: 100%;
+    overflow: visible;
+}
+.chart-fullwidth-wrapper .mud-chart {
+    margin-left: -40px;
+    width: calc(100% + 40px);
     overflow: visible;
 }
 .chart-fullwidth-wrapper svg {
@@ -112,10 +118,9 @@
         overflow: visible;
     }
 
-    /* Full-width chart: larger offset on mobile */
+    /* Full-width chart: no offset on mobile, overflow handles Y-axis */
     .chart-fullwidth-wrapper {
-        margin-left: calc(var(--yaxis-chars, 3) * 1.5rem);
-        width: calc(100% - var(--yaxis-chars, 3) * 1.5rem);
+        width: 100%;
     }
 }
 

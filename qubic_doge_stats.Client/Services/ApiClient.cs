@@ -86,4 +86,19 @@ public class ApiClient
         try { return await _http.GetFromJsonAsync<List<TopDonor>>($"/api/donations/top?limit={limit}") ?? []; }
         catch { return []; }
     }
+
+    public async Task TrackVisitAsync(string path)
+    {
+        try
+        {
+            await _http.PostAsJsonAsync("/api/track", new { path });
+        }
+        catch { /* fire-and-forget, fail silently */ }
+    }
+
+    public async Task<VisitorStatsDto?> GetVisitorStatsAsync()
+    {
+        try { return await _http.GetFromJsonAsync<VisitorStatsDto>("/api/visitor-stats"); }
+        catch { return null; }
+    }
 }

@@ -2,6 +2,9 @@ using qubic_doge_stats.Infrastructure;
 using qubic_doge_stats.Workers;
 using qubic_doge_stats.Shared.Models;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace qubic_doge_stats.Endpoints;
 
@@ -106,5 +109,85 @@ public static class ApiEndpoints
                 entries = entries.Where(e => e.Level.Equals(level, StringComparison.OrdinalIgnoreCase)).ToList();
             return Results.Ok(entries.TakeLast(Math.Min(limit, 500)));
         });
+
+        // ── Visitor Analytics ────────────────────────────────────────────────
+
+        api.MapPost("/track", async (HttpContext ctx, LiteDbContext db, IHttpClientFactory httpFactory) =>
+        {
+            // Read path from body
+            string path = "/";
+            try
+            {
+                using var reader = new System.IO.StreamReader(ctx.Request.Body);
+                var body = await reader.ReadToEndAsync();
+                if (!string.IsNullOrWhiteSpace(body))
+                {
+                    var doc = JsonSerializer.Deserialize<JsonElement>(body);
+                    if (doc.TryGetProperty("path", out var p))
+                        path = p.GetString() ?? "/";
+                }
+            }
+            catch { /* ignore malformed body */ }
+
+            // Resolve real IP
+            string? ip = ctx.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+                         ?? ctx.Connection.RemoteIpAddress?.ToString();
+
+            // Hash the IP — never store raw
+            string ipHash = "";
+            if (!string.IsNullOrEmpty(ip))
+            {
+                var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(ip));
+                ipHash = Convert.ToHexString(bytes).ToLowerInvariant();
+            }
+
+            // Geo-IP lookup — skip for localhost/private ranges, fail silently
+            string? countryCode = null;
+            string? countryName = null;
+            if (!string.IsNullOrEmpty(ip) && !IsPrivateOrLocalIp(ip))
+            {
+                try
+                {
+                    using var geoClient = httpFactory.CreateClient();
+                    geoClient.Timeout = TimeSpan.FromSeconds(3);
+                    var geoJson = await geoClient.GetStringAsync($"http://ip-api.com/json/{ip}?fields=countryCode,country");
+                    var geoDoc  = JsonSerializer.Deserialize<JsonElement>(geoJson);
+                    if (geoDoc.TryGetProperty("countryCode", out var cc))
+                        countryCode = cc.GetString();
+                    if (geoDoc.TryGetProperty("country", out var cn))
+                        countryName = cn.GetString();
+                }
+                catch { /* fail silently */ }
+            }
+
+            db.InsertVisitor(new VisitorEntry
+            {
+                Timestamp   = DateTime.UtcNow,
+                IpHash      = ipHash,
+                CountryCode = countryCode,
+                CountryName = countryName,
+                Path        = path,
+            });
+
+            return Results.Ok();
+        });
+
+        api.MapGet("/visitor-stats", (LiteDbContext db) =>
+            Results.Ok(db.GetVisitorStats()));
+    }
+
+    private static bool IsPrivateOrLocalIp(string ip)
+    {
+        if (ip == "::1" || ip == "127.0.0.1") return true;
+        if (!System.Net.IPAddress.TryParse(ip, out var addr)) return true;
+        var bytes = addr.GetAddressBytes();
+        if (bytes.Length != 4) return true;  // skip IPv6 for geo (ip-api.com supports it but keep simple)
+        // 10.x.x.x
+        if (bytes[0] == 10) return true;
+        // 172.16.x.x – 172.31.x.x
+        if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) return true;
+        // 192.168.x.x
+        if (bytes[0] == 192 && bytes[1] == 168) return true;
+        return false;
     }
 }

@@ -150,6 +150,10 @@ public class LiteDbContext : IDisposable
 
         var donCol = _db.GetCollection<DonationEntry>("donations");
         donCol.EnsureIndex(x => x.Address);
+
+        var visitorCol = _db.GetCollection<VisitorEntry>("visitors");
+        visitorCol.EnsureIndex(x => x.Timestamp);
+        visitorCol.EnsureIndex(x => x.IpHash);
     }
 
     public List<HashrateSnapshot> GetSnapshots(int limit = 1440)
@@ -556,6 +560,103 @@ public class LiteDbContext : IDisposable
             var exists = col.Exists(x => x.Address == entry.Address && x.AmountQu == entry.AmountQu && x.Date == entry.Date);
             if (!exists)
                 col.Insert(entry);
+        }
+    }
+
+    // ── Visitor Analytics ────────────────────────────────────────────────────
+
+    public void InsertVisitor(VisitorEntry entry)
+    {
+        lock (_lock)
+        {
+            _db.GetCollection<VisitorEntry>("visitors").Insert(entry);
+        }
+    }
+
+    public VisitorStatsDto GetVisitorStats()
+    {
+        lock (_lock)
+        {
+            var col = _db.GetCollection<VisitorEntry>("visitors");
+            var all = col.FindAll().ToList();
+
+            var nowUtc     = DateTime.UtcNow;
+            var today      = nowUtc.Date;
+            var weekAgo    = nowUtc.AddDays(-7);
+            var monthAgo   = nowUtc.AddDays(-30);
+            var fiveMinAgo = nowUtc.AddHours(-1);
+
+            var todayEntries    = all.Where(e => e.Timestamp >= today).ToList();
+            var weekEntries     = all.Where(e => e.Timestamp >= weekAgo).ToList();
+            var monthEntries    = all.Where(e => e.Timestamp >= monthAgo).ToList();
+            var activeEntries   = all.Where(e => e.Timestamp >= fiveMinAgo).ToList();
+
+            // Last 30 days grouped by date
+            var last30Days = all
+                .Where(e => e.Timestamp >= monthAgo)
+                .GroupBy(e => e.Timestamp.Date)
+                .OrderBy(g => g.Key)
+                .Select(g => new DailyVisitorCount
+                {
+                    Date          = g.Key.ToString("yyyy-MM-dd"),
+                    PageViews     = g.Count(),
+                    UniqueVisitors = g.Select(e => e.IpHash).Distinct().Count()
+                })
+                .ToList();
+
+            // Last 24 months grouped by year-month
+            var twoYearsAgo = nowUtc.AddMonths(-24);
+            var last24Months = all
+                .Where(e => e.Timestamp >= twoYearsAgo)
+                .GroupBy(e => new { e.Timestamp.Year, e.Timestamp.Month })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                .Select(g => new MonthlyVisitorCount
+                {
+                    Month          = $"{g.Key.Year:0000}-{g.Key.Month:00}",
+                    PageViews      = g.Count(),
+                    UniqueVisitors = g.Select(e => e.IpHash).Distinct().Count()
+                })
+                .ToList();
+
+            // All years grouped
+            var allYears = all
+                .GroupBy(e => e.Timestamp.Year)
+                .OrderBy(g => g.Key)
+                .Select(g => new YearlyVisitorCount
+                {
+                    Year           = g.Key,
+                    PageViews      = g.Count(),
+                    UniqueVisitors = g.Select(e => e.IpHash).Distinct().Count()
+                })
+                .ToList();
+
+            static List<CountryCount> TopCountries(IEnumerable<VisitorEntry> entries) =>
+                entries
+                    .Where(e => !string.IsNullOrEmpty(e.CountryCode))
+                    .GroupBy(e => new { e.CountryCode, e.CountryName })
+                    .Select(g => new CountryCount
+                    {
+                        CountryCode = g.Key.CountryCode ?? "",
+                        CountryName = g.Key.CountryName ?? "",
+                        Count       = g.Count()
+                    })
+                    .OrderByDescending(c => c.Count)
+                    .Take(10)
+                    .ToList();
+
+            return new VisitorStatsDto
+            {
+                TotalPageViews           = all.Count,
+                UniqueVisitorsToday      = todayEntries.Select(e => e.IpHash).Distinct().Count(),
+                UniqueVisitorsThisWeek   = weekEntries.Select(e => e.IpHash).Distinct().Count(),
+                UniqueVisitorsThisMonth  = monthEntries.Select(e => e.IpHash).Distinct().Count(),
+                ActiveVisitorsLastHour   = activeEntries.Select(e => e.IpHash).Distinct().Count(),
+                Last30Days               = last30Days,
+                Last24Months             = last24Months,
+                AllYears                 = allYears,
+                TopCountries30Days       = TopCountries(monthEntries),
+                TopCountriesAllTime      = TopCountries(all),
+            };
         }
     }
 

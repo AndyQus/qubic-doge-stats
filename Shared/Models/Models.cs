@@ -392,6 +392,61 @@ public class TopDonor
     public string Date { get; set; } = "";
 }
 
+// ── Visitor Analytics ────────────────────────────────────────────────────────
+
+public class VisitorEntry
+{
+    [BsonId(autoId: true)]
+    public ObjectId Id { get; set; } = ObjectId.NewObjectId();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string IpHash { get; set; } = "";  // SHA256 hash of IP, no raw IP stored
+    public string? CountryCode { get; set; }
+    public string? CountryName { get; set; }
+    public string Path { get; set; } = "/";
+}
+
+public class VisitorStatsDto
+{
+    public int TotalPageViews { get; set; }
+    public int UniqueVisitorsToday { get; set; }
+    public int UniqueVisitorsThisWeek { get; set; }
+    public int UniqueVisitorsThisMonth { get; set; }
+    public int ActiveVisitorsLastHour { get; set; }
+    public List<DailyVisitorCount> Last30Days { get; set; } = new();
+    public List<MonthlyVisitorCount> Last24Months { get; set; } = new();
+    public List<YearlyVisitorCount> AllYears { get; set; } = new();
+    public List<CountryCount> TopCountries30Days { get; set; } = new();
+    public List<CountryCount> TopCountriesAllTime { get; set; } = new();
+}
+
+public class DailyVisitorCount
+{
+    public string Date { get; set; } = "";  // "yyyy-MM-dd"
+    public int PageViews { get; set; }
+    public int UniqueVisitors { get; set; }
+}
+
+public class MonthlyVisitorCount
+{
+    public string Month { get; set; } = "";  // "yyyy-MM"
+    public int PageViews { get; set; }
+    public int UniqueVisitors { get; set; }
+}
+
+public class YearlyVisitorCount
+{
+    public int Year { get; set; }
+    public int PageViews { get; set; }
+    public int UniqueVisitors { get; set; }
+}
+
+public class CountryCount
+{
+    public string CountryCode { get; set; } = "";
+    public string CountryName { get; set; } = "";
+    public int Count { get; set; }
+}
+
 // Qubic RPC v2 response models for address transfers
 // Actual structure: GET /v2/identities/{id}/transfers
 public class QubicTransferResponse

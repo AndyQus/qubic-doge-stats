@@ -351,3 +351,29 @@
 .footer-link:hover {
     text-decoration: underline;
 }
+
+/* ===== Chart scroll-through fix =====
+   Charts block wheel/touch scroll events by default.
+   pointer-events: none lets scroll pass through to the page;
+   hover re-enables them so tooltips and zoom still work on desktop. */
+.chart-fullwidth-wrapper,
+.chart-mobile-wrapper,
+.chart-apex-wrapper {
+    touch-action: pan-y;
+}
+
+.chart-fullwidth-wrapper svg,
+.chart-mobile-wrapper svg,
+.chart-apex-wrapper svg,
+.apexcharts-canvas {
+    pointer-events: none;
+}
+
+.chart-fullwidth-wrapper:hover svg,
+.chart-mobile-wrapper:hover svg,
+.chart-apex-wrapper:hover svg,
+.chart-fullwidth-wrapper:hover .apexcharts-canvas,
+.chart-mobile-wrapper:hover .apexcharts-canvas,
+.chart-apex-wrapper:hover .apexcharts-canvas {
+    pointer-events: auto;
+}

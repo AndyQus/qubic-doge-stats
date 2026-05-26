@@ -2,6 +2,7 @@
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 @implements IDisposable
 
 <PageTitle>Qubic Doge Stats</PageTitle>
@@ -525,18 +526,20 @@ else
                     </div>
                     @if (_apex24hData.Count > 0)
                     {
-                        <ApexCharts.ApexChart TItem="Apex24hPoint"
-                                   Options="@_apex24hOptions"
-                                   @ref="_apex24hChart"
-                                   Height="300">
-                            <ApexCharts.ApexPointSeries TItem="Apex24hPoint"
-                                             Items="@_apex24hData"
-                                             SeriesType="ApexCharts.SeriesType.Line"
-                                             Name="TH/s"
-                                             XValue="@(p => p.Time.ToUnixTimeMilliseconds())"
-                                             YValue="@(p => (decimal)p.Value)"
-                                             OrderBy="p => p.X" />
-                        </ApexCharts.ApexChart>
+                        <div class="chart-apex-wrapper">
+                            <ApexCharts.ApexChart TItem="Apex24hPoint"
+                                       Options="@_apex24hOptions"
+                                       @ref="_apex24hChart"
+                                       Height="300">
+                                <ApexCharts.ApexPointSeries TItem="Apex24hPoint"
+                                                 Items="@_apex24hData"
+                                                 SeriesType="ApexCharts.SeriesType.Line"
+                                                 Name="TH/s"
+                                                 XValue="@(p => p.Time.ToUnixTimeMilliseconds())"
+                                                 YValue="@(p => (decimal)p.Value)"
+                                                 OrderBy="p => p.X" />
+                            </ApexCharts.ApexChart>
+                        </div>
                     }
                     else
                     {
@@ -1391,6 +1394,194 @@ else
 
     </MudTabPanel>
 
+    @* ── Visitors Tab ── *@
+    <MudTabPanel Text="Visitors" Icon="@Icons.Material.Filled.People">
+
+        <MudAlert Severity="Severity.Info" Variant="Variant.Text" Class="mb-4" Icon="@Icons.Material.Filled.Shield">
+            <strong>Privacy-first analytics:</strong> No cookies, no third-party trackers, no personal data stored.
+            IP addresses are irreversibly hashed (SHA-256) before storage and cannot be traced back to individuals.
+            Geo-location is resolved to country level only. All data is self-hosted.
+        </MudAlert>
+
+        @* Top row: 4 stat cards *@
+        <MudGrid Class="mb-4" Spacing="3">
+            <MudItem xs="12" sm="6" md="3">
+                <StatCard Icon="@Icons.Material.Filled.PersonPin"
+                          Title="Active Now"
+                          Value="@(_visitorStats is not null ? _visitorStats.ActiveVisitorsLastHour.ToString("N0") : "–")"
+                          ValueLabel="last 60 min"
+                          Color="#4caf50"
+                          Tooltip="Unique visitors in the last 60 minutes (by IP hash)." />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatCard Icon="@Icons.Material.Filled.CalendarToday"
+                          Title="Unique Today"
+                          Value="@(_visitorStats is not null ? _visitorStats.UniqueVisitorsToday.ToString("N0") : "–")"
+                          Color="#4EE0FC"
+                          Tooltip="Unique visitors today (UTC, by IP hash)." />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatCard Icon="@Icons.Material.Filled.DateRange"
+                          Title="Unique This Week"
+                          Value="@(_visitorStats is not null ? _visitorStats.UniqueVisitorsThisWeek.ToString("N0") : "–")"
+                          Color="#2196f3"
+                          Tooltip="Unique visitors in the last 7 days (by IP hash)." />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatCard Icon="@Icons.Material.Filled.CalendarMonth"
+                          Title="Unique This Month"
+                          Value="@(_visitorStats is not null ? _visitorStats.UniqueVisitorsThisMonth.ToString("N0") : "–")"
+                          Color="#9c27b0"
+                          Tooltip="Unique visitors in the last 30 days (by IP hash)." />
+            </MudItem>
+        </MudGrid>
+
+        @* Period toggle *@
+        <div class="d-flex gap-2 mb-4">
+            <MudChip T="string" Color="@(_visitorPeriod == "days"   ? Color.Primary : Color.Default)" Variant="Variant.Filled" Size="Size.Small" OnClick="@(() => _visitorPeriod = "days")"   >Last 30 Days</MudChip>
+            <MudChip T="string" Color="@(_visitorPeriod == "months" ? Color.Primary : Color.Default)" Variant="Variant.Filled" Size="Size.Small" OnClick="@(() => _visitorPeriod = "months")">By Month</MudChip>
+            <MudChip T="string" Color="@(_visitorPeriod == "years"  ? Color.Primary : Color.Default)" Variant="Variant.Filled" Size="Size.Small" OnClick="@(() => _visitorPeriod = "years")" >By Year</MudChip>
+        </div>
+
+        @* Page Views chart *@
+        <MudGrid Class="mb-4" Spacing="3">
+            <MudItem xs="12">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="overflow:visible;">
+                    <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                        <MudText Typo="Typo.h6" Style="color:#7e6fff;">
+                            Page Views @(_visitorPeriod == "days" ? "(Last 30 Days)" : _visitorPeriod == "months" ? "(By Month)" : "(By Year)")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text">auto 30 s · last update: @_visitorLastRefresh.ToLocalTime().ToString("HH:mm:ss")</MudText>
+                    </div>
+                    @if (_visitorPeriod == "days" && _visitorStats?.Last30Days.Count > 0)
+                    {
+                        <ApexCharts.ApexChart TItem="DailyVisitorCount" Options="@_apexVisitorOptions" @ref="_apexVisitorChart" Height="280">
+                            <ApexCharts.ApexPointSeries TItem="DailyVisitorCount"
+                                Items="@_visitorStats.Last30Days" SeriesType="ApexCharts.SeriesType.Area" Name="Page Views"
+                                XValue="@(p => DateTime.Parse(p.Date, System.Globalization.CultureInfo.InvariantCulture).ToLocalTime())"
+                                YValue="@(p => (decimal)p.PageViews)" OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
+                    }
+                    else if (_visitorPeriod == "months" && _visitorStats?.Last24Months.Count > 0)
+                    {
+                        <ApexCharts.ApexChart TItem="MonthlyVisitorCount" Options="@_apexVisitorMonthOptions" Height="280">
+                            <ApexCharts.ApexPointSeries TItem="MonthlyVisitorCount"
+                                Items="@_visitorStats.Last24Months" SeriesType="ApexCharts.SeriesType.Bar" Name="Page Views"
+                                XValue="@(p => p.Month)"
+                                YValue="@(p => (decimal)p.PageViews)" OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
+                    }
+                    else if (_visitorPeriod == "years" && _visitorStats?.AllYears.Count > 0)
+                    {
+                        <ApexCharts.ApexChart TItem="YearlyVisitorCount" Options="@_apexVisitorYearOptions" Height="280">
+                            <ApexCharts.ApexPointSeries TItem="YearlyVisitorCount"
+                                Items="@_visitorStats.AllYears" SeriesType="ApexCharts.SeriesType.Bar" Name="Page Views"
+                                XValue="@(p => p.Year.ToString())"
+                                YValue="@(p => (decimal)p.PageViews)" OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:280px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText Class="ml-3 dim-text">Collecting visitor data…</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        @* Second row: Unique Visitors chart + Top Countries *@
+        <MudGrid Class="mb-4" Spacing="3">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-3" Style="color:#7e6fff;">
+                        Unique Visitors @(_visitorPeriod == "days" ? "(Last 30 Days)" : _visitorPeriod == "months" ? "(By Month)" : "(By Year)")
+                    </MudText>
+                    @if (_visitorPeriod == "days" && _visitorStats?.Last30Days.Count > 0)
+                    {
+                        <ApexCharts.ApexChart TItem="DailyVisitorCount" Options="@_apexUniqueVisitorOptions" Height="260">
+                            <ApexCharts.ApexPointSeries TItem="DailyVisitorCount"
+                                Items="@_visitorStats.Last30Days" SeriesType="ApexCharts.SeriesType.Line" Name="Unique Visitors"
+                                XValue="@(p => DateTime.Parse(p.Date, System.Globalization.CultureInfo.InvariantCulture).ToLocalTime())"
+                                YValue="@(p => (decimal)p.UniqueVisitors)" OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
+                    }
+                    else if (_visitorPeriod == "months" && _visitorStats?.Last24Months.Count > 0)
+                    {
+                        <ApexCharts.ApexChart TItem="MonthlyVisitorCount" Options="@_apexUniqueVisitorMonthOptions" Height="260">
+                            <ApexCharts.ApexPointSeries TItem="MonthlyVisitorCount"
+                                Items="@_visitorStats.Last24Months" SeriesType="ApexCharts.SeriesType.Bar" Name="Unique Visitors"
+                                XValue="@(p => p.Month)"
+                                YValue="@(p => (decimal)p.UniqueVisitors)" OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
+                    }
+                    else if (_visitorPeriod == "years" && _visitorStats?.AllYears.Count > 0)
+                    {
+                        <ApexCharts.ApexChart TItem="YearlyVisitorCount" Options="@_apexUniqueVisitorYearOptions" Height="260">
+                            <ApexCharts.ApexPointSeries TItem="YearlyVisitorCount"
+                                Items="@_visitorStats.AllYears" SeriesType="ApexCharts.SeriesType.Bar" Name="Unique Visitors"
+                                XValue="@(p => p.Year.ToString())"
+                                YValue="@(p => (decimal)p.UniqueVisitors)" OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                    <MudText Typo="Typo.h6" Class="mb-3" Style="color:#7e6fff;">
+                        Top Countries @(_visitorPeriod == "days" ? "(Last 30 Days)" : "(All Time)")
+                    </MudText>
+                    @{
+                        var countryList = _visitorPeriod == "days"
+                            ? _visitorStats?.TopCountries30Days
+                            : _visitorStats?.TopCountriesAllTime;
+                    }
+                    @if (countryList?.Count > 0)
+                    {
+                        <MudSimpleTable Dense="true" Hover="true" Style="background:transparent;">
+                            <thead>
+                                <tr>
+                                    <th style="color:#7e6fff;">#</th>
+                                    <th style="color:#7e6fff;">Country</th>
+                                    <th style="color:#7e6fff; text-align:right;">Views</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ int rank = 1; }
+                                @foreach (var country in countryList)
+                                {
+                                    <tr>
+                                        <td style="color:var(--mud-palette-text-secondary); font-size:0.8rem;">@rank</td>
+                                        <td>
+                                            <span style="font-size:1.1rem; margin-right:6px;">@GetCountryFlag(country.CountryCode)</span>
+                                            <span style="font-size:0.85rem;">@country.CountryName</span>
+                                        </td>
+                                        <td style="text-align:right; color:#4EE0FC; font-weight:600; font-size:0.85rem;">@country.Count.ToString("N0")</td>
+                                    </tr>
+                                    rank++;
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-center align-center" style="height:260px;">
+                            <MudText Class="dim-text">No geo data yet.</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+    </MudTabPanel>
+
 </MudTabs>
 
 @code {
@@ -1409,6 +1600,239 @@ else
     private static readonly string[] _lightPalette = ["#3d1fcc", "#006f8a", "#1b5e20", "#bf3600", "#8b0000"];
 
     private System.Threading.Timer? _refreshTimer;
+    private System.Threading.Timer? _visitorRefreshTimer;
+
+    // ── Visitor Analytics ────────────────────────────────────────────────────
+    private VisitorStatsDto? _visitorStats;
+    private DateTimeOffset _visitorLastRefresh = DateTimeOffset.UtcNow;
+    private string _visitorPeriod = "days";
+    private ApexCharts.ApexChart<DailyVisitorCount>? _apexVisitorChart;
+    private ApexCharts.ApexChartOptions<DailyVisitorCount>  _apexVisitorOptions          = new();
+    private ApexCharts.ApexChartOptions<DailyVisitorCount>  _apexUniqueVisitorOptions    = new();
+    private ApexCharts.ApexChartOptions<MonthlyVisitorCount> _apexVisitorMonthOptions     = new();
+    private ApexCharts.ApexChartOptions<MonthlyVisitorCount> _apexUniqueVisitorMonthOptions = new();
+    private ApexCharts.ApexChartOptions<YearlyVisitorCount>  _apexVisitorYearOptions      = new();
+    private ApexCharts.ApexChartOptions<YearlyVisitorCount>  _apexUniqueVisitorYearOptions = new();
+
+    private static string GetCountryFlag(string countryCode)
+    {
+        if (string.IsNullOrEmpty(countryCode) || countryCode.Length != 2) return "";
+        // Regional indicator symbols: 'A' = U+1F1E6, offset from 'A'
+        int offset = 0x1F1E6 - 'A';
+        return char.ConvertFromUtf32(countryCode[0] + offset) + char.ConvertFromUtf32(countryCode[1] + offset);
+    }
+
+    private void InitApexVisitorOptions()
+    {
+        var lineColor   = IsDarkMode ? "#7e6fff" : "#3d1fcc";
+        var line2Color  = IsDarkMode ? "#4EE0FC" : "#006f8a";
+        var labelColor  = IsDarkMode ? "rgba(255,255,255,0.55)" : "rgba(20,20,50,0.7)";
+        var gridColor   = IsDarkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)";
+
+        _apexVisitorOptions = new ApexCharts.ApexChartOptions<DailyVisitorCount>
+        {
+            Chart = new ApexCharts.Chart
+            {
+                Background = "transparent",
+                Toolbar    = new ApexCharts.Toolbar { Show = false },
+                Animations = new ApexCharts.Animations { Enabled = false },
+                ForeColor  = labelColor,
+            },
+            Theme  = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
+            Stroke = new ApexCharts.Stroke { Curve = ApexCharts.Curve.Smooth, Width = [2] },
+            Colors = [lineColor],
+            Fill   = new ApexCharts.Fill
+            {
+                Type    = [ApexCharts.FillType.Gradient],
+                Gradient = new ApexCharts.FillGradient
+                {
+                    ShadeIntensity = 1,
+                    OpacityFrom    = 0.35,
+                    OpacityTo      = 0.05,
+                    Stops          = [0, 100],
+                }
+            },
+            Grid = new ApexCharts.Grid { BorderColor = gridColor },
+            Xaxis = new ApexCharts.XAxis
+            {
+                Type   = ApexCharts.XAxisType.Datetime,
+                Labels = new ApexCharts.XAxisLabels
+                {
+                    DatetimeFormatter = new ApexCharts.DatetimeFormatter { Day = "MM-dd" },
+                    Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                    Rotate = -45,
+                    RotateAlways = false,
+                },
+                TickAmount = 10,
+            },
+            Yaxis =
+            [
+                new ApexCharts.YAxis
+                {
+                    Labels = new ApexCharts.YAxisLabels
+                    {
+                        Formatter = "function(val) { return val.toFixed(0); }",
+                        Style     = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                    },
+                    Title = new ApexCharts.AxisTitle { Text = "Views" },
+                }
+            ],
+            Tooltip  = new ApexCharts.Tooltip { X = new ApexCharts.TooltipX { Format = "yyyy-MM-dd" } },
+            Markers  = new ApexCharts.Markers { Size = [0] },
+            Legend   = new ApexCharts.Legend { Show = true },
+        };
+
+        _apexUniqueVisitorOptions = new ApexCharts.ApexChartOptions<DailyVisitorCount>
+        {
+            Chart = new ApexCharts.Chart
+            {
+                Background = "transparent",
+                Toolbar    = new ApexCharts.Toolbar { Show = false },
+                Animations = new ApexCharts.Animations { Enabled = false },
+                ForeColor  = labelColor,
+            },
+            Theme  = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
+            Stroke = new ApexCharts.Stroke { Curve = ApexCharts.Curve.Smooth, Width = [2] },
+            Colors = [line2Color],
+            Grid   = new ApexCharts.Grid { BorderColor = gridColor },
+            Fill   = new ApexCharts.Fill { Type = [ApexCharts.FillType.Solid] },
+            Xaxis  = new ApexCharts.XAxis
+            {
+                Type   = ApexCharts.XAxisType.Datetime,
+                Labels = new ApexCharts.XAxisLabels
+                {
+                    DatetimeFormatter = new ApexCharts.DatetimeFormatter { Day = "MM-dd" },
+                    Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                    Rotate = -45,
+                    RotateAlways = false,
+                },
+                TickAmount = 10,
+            },
+            Yaxis =
+            [
+                new ApexCharts.YAxis
+                {
+                    Labels = new ApexCharts.YAxisLabels
+                    {
+                        Formatter = "function(val) { return val.toFixed(0); }",
+                        Style     = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                    },
+                    Title = new ApexCharts.AxisTitle { Text = "Unique" },
+                }
+            ],
+            Tooltip = new ApexCharts.Tooltip { X = new ApexCharts.TooltipX { Format = "yyyy-MM-dd" } },
+            Markers = new ApexCharts.Markers { Size = [0] },
+            Legend  = new ApexCharts.Legend { Show = true },
+        };
+
+        // ── Month options (Bar charts) ────────────────────────────────────────
+        var barChartBase = new ApexCharts.Chart
+        {
+            Background = "transparent",
+            Toolbar    = new ApexCharts.Toolbar { Show = false },
+            Animations = new ApexCharts.Animations { Enabled = false },
+            ForeColor  = labelColor,
+        };
+        var barXaxis = new ApexCharts.XAxis
+        {
+            Type   = ApexCharts.XAxisType.Datetime,
+            Labels = new ApexCharts.XAxisLabels
+            {
+                DatetimeFormatter = new ApexCharts.DatetimeFormatter { Month = "MMM yy" },
+                Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                Rotate = -45,
+                RotateAlways = false,
+            },
+        };
+        var yearXaxis = new ApexCharts.XAxis
+        {
+            Type   = ApexCharts.XAxisType.Datetime,
+            Labels = new ApexCharts.XAxisLabels
+            {
+                DatetimeFormatter = new ApexCharts.DatetimeFormatter { Year = "yyyy" },
+                Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+            },
+        };
+
+        var monthCategoryXaxis = new ApexCharts.XAxis
+        {
+            Type   = ApexCharts.XAxisType.Category,
+            Labels = new ApexCharts.XAxisLabels
+            {
+                Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" },
+                Rotate = -45,
+                RotateAlways = false,
+            },
+        };
+
+        _apexVisitorMonthOptions = new ApexCharts.ApexChartOptions<MonthlyVisitorCount>
+        {
+            Chart  = barChartBase,
+            Theme  = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
+            Colors = [lineColor],
+            Grid   = new ApexCharts.Grid { BorderColor = gridColor },
+            Xaxis  = monthCategoryXaxis,
+            Yaxis  = [new ApexCharts.YAxis { Labels = new ApexCharts.YAxisLabels { Formatter = "function(val) { return val.toFixed(0); }", Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" } }, Title = new ApexCharts.AxisTitle { Text = "Views" } }],
+            PlotOptions = new ApexCharts.PlotOptions { Bar = new ApexCharts.PlotOptionsBar { ColumnWidth = "60%" } },
+            Tooltip = new ApexCharts.Tooltip { X = new ApexCharts.TooltipX { Show = true } },
+            Legend  = new ApexCharts.Legend { Show = true },
+        };
+
+        _apexUniqueVisitorMonthOptions = new ApexCharts.ApexChartOptions<MonthlyVisitorCount>
+        {
+            Chart  = barChartBase,
+            Theme  = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
+            Colors = [line2Color],
+            Grid   = new ApexCharts.Grid { BorderColor = gridColor },
+            Xaxis  = monthCategoryXaxis,
+            Yaxis  = [new ApexCharts.YAxis { Labels = new ApexCharts.YAxisLabels { Formatter = "function(val) { return val.toFixed(0); }", Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" } }, Title = new ApexCharts.AxisTitle { Text = "Unique" } }],
+            PlotOptions = new ApexCharts.PlotOptions { Bar = new ApexCharts.PlotOptionsBar { ColumnWidth = "60%" } },
+            Tooltip = new ApexCharts.Tooltip { X = new ApexCharts.TooltipX { Show = true } },
+            Legend  = new ApexCharts.Legend { Show = true },
+        };
+
+        // ── Year options (category X-axis so single bars render at normal width) ──
+        var yearCategoryXaxis = new ApexCharts.XAxis
+        {
+            Type   = ApexCharts.XAxisType.Category,
+            Labels = new ApexCharts.XAxisLabels
+            {
+                Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "13px" },
+            },
+        };
+
+        _apexVisitorYearOptions = new ApexCharts.ApexChartOptions<YearlyVisitorCount>
+        {
+            Chart  = barChartBase,
+            Theme  = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
+            Colors = [lineColor],
+            Grid   = new ApexCharts.Grid { BorderColor = gridColor },
+            Xaxis  = yearCategoryXaxis,
+            Yaxis  = [new ApexCharts.YAxis { Labels = new ApexCharts.YAxisLabels { Formatter = "function(val) { return val.toFixed(0); }", Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" } }, Title = new ApexCharts.AxisTitle { Text = "Views" } }],
+            PlotOptions = new ApexCharts.PlotOptions { Bar = new ApexCharts.PlotOptionsBar { ColumnWidth = "40%" } },
+            Tooltip = new ApexCharts.Tooltip { X = new ApexCharts.TooltipX { Show = true } },
+            Legend  = new ApexCharts.Legend { Show = true },
+        };
+
+        _apexUniqueVisitorYearOptions = new ApexCharts.ApexChartOptions<YearlyVisitorCount>
+        {
+            Chart  = barChartBase,
+            Theme  = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
+            Colors = [line2Color],
+            Grid   = new ApexCharts.Grid { BorderColor = gridColor },
+            Xaxis  = yearCategoryXaxis,
+            Yaxis  = [new ApexCharts.YAxis { Labels = new ApexCharts.YAxisLabels { Formatter = "function(val) { return val.toFixed(0); }", Style = new ApexCharts.AxisLabelStyle { Colors = labelColor, FontSize = "11px" } }, Title = new ApexCharts.AxisTitle { Text = "Unique" } }],
+            PlotOptions = new ApexCharts.PlotOptions { Bar = new ApexCharts.PlotOptionsBar { ColumnWidth = "40%" } },
+            Tooltip = new ApexCharts.Tooltip { X = new ApexCharts.TooltipX { Show = true } },
+            Legend  = new ApexCharts.Legend { Show = true },
+        };
+    }
+
+    private async Task RefreshVisitorStatsAsync()
+    {
+        _visitorStats        = await Api.GetVisitorStatsAsync();
+        _visitorLastRefresh  = DateTimeOffset.UtcNow;
+    }
 
     private const decimal DogeBlockReward = 10_000m;
     private const decimal LtcBlockReward  = 6.25m;   // next halving ~August 2027
@@ -1672,13 +2096,26 @@ else
         Snackbar.Configuration.MaxDisplayedSnackbars = 5;
         Snackbar.Configuration.NewestOnTop = true;
         InitApex24hOptions();
+        InitApexVisitorOptions();
         await RefreshDataAsync();
+
+        // Track this page visit (fire-and-forget)
+        _ = Api.TrackVisitAsync(Nav.Uri);
+
+        // Load visitor stats
+        await RefreshVisitorStatsAsync();
+
         _refreshTimer = new System.Threading.Timer(async _ =>
         {
             await RefreshDataAsync();
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
 
+        _visitorRefreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await RefreshVisitorStatsAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private async Task RefreshDataAsync()
@@ -2511,5 +2948,6 @@ _lastRefresh = DateTimeOffset.UtcNow;
     public void Dispose()
     {
         _refreshTimer?.Dispose();
+        _visitorRefreshTimer?.Dispose();
     }
 }

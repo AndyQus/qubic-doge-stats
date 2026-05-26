@@ -83,6 +83,16 @@
     font-size: var(--xaxis-font-size, 1.26rem) !important;
 }
 
+/* Full-width chart wrapper: compensates Y-axis offset on ALL screen sizes */
+.chart-fullwidth-wrapper {
+    margin-left: calc(var(--yaxis-chars, 3) * 1.0rem);
+    width: calc(100% - var(--yaxis-chars, 3) * 1.0rem);
+    overflow: visible;
+}
+.chart-fullwidth-wrapper svg {
+    overflow: visible;
+}
+
 /* Y-axis labels: 3× size (mobile) */
 @media (max-width: 600px) {
     .mud-charts-yaxis text {
@@ -100,6 +110,12 @@
     }
     .chart-mobile-wrapper svg {
         overflow: visible;
+    }
+
+    /* Full-width chart: larger offset on mobile */
+    .chart-fullwidth-wrapper {
+        margin-left: calc(var(--yaxis-chars, 3) * 1.5rem);
+        width: calc(100% - var(--yaxis-chars, 3) * 1.5rem);
     }
 }
 

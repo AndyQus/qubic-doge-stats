@@ -59,8 +59,8 @@
         @if (_bannerInitialized)
         {
             <div style="width:100%; display:flex; justify-content:flex-end; align-items:center; gap:6px; padding:4px 16px; background:transparent;">
-                <span style="font-size:0.7rem; font-weight:600; color:var(--mud-palette-text-secondary);">Extended</span>
-                <MudSwitch T="bool" Value="!_isLiteMode" ValueChanged="@((bool v) => ToggleLiteModeAsync(!v))"
+                <span style="font-size:0.7rem; font-weight:600; color:var(--mud-palette-text-secondary);">Lite Mode</span>
+                <MudSwitch T="bool" Value="_isLiteMode" ValueChanged="@((bool v) => ToggleLiteModeAsync(v))"
                            Color="Color.Primary" Style="margin:0;" />
             </div>
         }
@@ -126,7 +126,7 @@
             _bannerInitialized = true;
 
             var liteValue = await JS.InvokeAsync<string?>("localStorage.getItem", LiteModeKey);
-            _isLiteMode = liteValue != "false";
+            _isLiteMode = liteValue == "true";
 
             await JS.InvokeVoidAsync("eval", "document.activeElement?.blur()");
             StateHasChanged();

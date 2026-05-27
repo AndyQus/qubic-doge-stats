@@ -1394,7 +1394,9 @@ else
 
     </MudTabPanel>
 
-    @* ── Visitors Tab ── *@
+    @* ── Visitors Tab — only visible with ?admin=true ── *@
+    @if (_showVisitorTab)
+    {
     <MudTabPanel Text="Visitors" Icon="@Icons.Material.Filled.People">
 
         <MudAlert Severity="Severity.Info" Variant="Variant.Text" Class="mb-4" Icon="@Icons.Material.Filled.Shield">
@@ -1581,6 +1583,7 @@ else
         </MudGrid>
 
     </MudTabPanel>
+    } @* end @if (_showVisitorTab) *@
 
 </MudTabs>
 
@@ -1604,6 +1607,7 @@ else
 
     // ── Visitor Analytics ────────────────────────────────────────────────────
     private VisitorStatsDto? _visitorStats;
+    private bool _showVisitorTab = false;
     private DateTimeOffset _visitorLastRefresh = DateTimeOffset.UtcNow;
     private string _visitorPeriod = "days";
     private ApexCharts.ApexChart<DailyVisitorCount>? _apexVisitorChart;
@@ -2102,8 +2106,14 @@ else
         // Track this page visit (fire-and-forget)
         _ = Api.TrackVisitAsync(Nav.Uri);
 
-        // Load visitor stats
-        await RefreshVisitorStatsAsync();
+        // Show visitor tab only when ?admin=true is in the URL
+        var uri = new Uri(Nav.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        _showVisitorTab = query["admin"] == "true";
+
+        // Load visitor stats only when tab is visible
+        if (_showVisitorTab)
+            await RefreshVisitorStatsAsync();
 
         _refreshTimer = new System.Threading.Timer(async _ =>
         {
@@ -2111,11 +2121,12 @@ else
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
 
-        _visitorRefreshTimer = new System.Threading.Timer(async _ =>
-        {
-            await RefreshVisitorStatsAsync();
-            await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        if (_showVisitorTab)
+            _visitorRefreshTimer = new System.Threading.Timer(async _ =>
+            {
+                await RefreshVisitorStatsAsync();
+                await InvokeAsync(StateHasChanged);
+            }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private async Task RefreshDataAsync()

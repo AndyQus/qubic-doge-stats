@@ -367,3 +367,4 @@ qubic_doge_stats/Data/*.db-log
 
 # Claude Code local settings
 .claude/
+docs_claude/

@@ -81,18 +81,6 @@
                     </div>
                 </MudPaper>
             </MudItem>
-            @* Pool Rank (DOGE) *@
-            <MudItem xs="12" sm="6" md="3">
-                <StatCard Icon="@Icons.Material.Filled.EmojiEvents"
-                          Title="Pool Rank (DOGE)"
-                          Value="@(_miningPoolRanking is not null ? $"#{_miningPoolRanking.Qubic.Rank}" : "–")"
-                          SecondaryValue="@(_latestEpochSummary is not null && _latestEpochSummary.BestRank > 0 ? $"#{_latestEpochSummary.BestRank}" : "–")"
-                          SecondaryLabel="Epoch"
-                          TertiaryValue="@(_allTimeStats is not null && _allTimeStats.BestRank > 0 ? $"#{_allTimeStats.BestRank} · E{_allTimeStats.BestRankEpoch}" : "–")"
-                          TertiaryLabel="Best"
-                          Color="#7e6fff"
-                          Tooltip="@(_miningPoolRanking is not null ? $"Qubic's rank among all DOGE mining pools (of {_miningPoolRanking.TotalPools} pools)." : "Qubic's rank among all DOGE mining pools.")" />
-            </MudItem>
             @* Block Revenue *@
             <MudItem xs="12" sm="6" md="3">
                 <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
@@ -120,6 +108,18 @@
                         <MudText Typo="Typo.body1" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_totalRevenueUsd > 0 ? $"${_totalRevenueUsd:N0}" : "–")</MudText>
                     </div>
                 </MudPaper>
+            </MudItem>
+            @* Pool Rank (DOGE) *@
+            <MudItem xs="12" sm="6" md="3">
+                <StatCard Icon="@Icons.Material.Filled.EmojiEvents"
+                          Title="Pool Rank (DOGE)"
+                          Value="@(_miningPoolRanking is not null ? $"#{_miningPoolRanking.Qubic.Rank}" : "–")"
+                          SecondaryValue="@(_latestEpochSummary is not null && _latestEpochSummary.BestRank > 0 ? $"#{_latestEpochSummary.BestRank}" : "–")"
+                          SecondaryLabel="Epoch"
+                          TertiaryValue="@(_allTimeStats is not null && _allTimeStats.BestRank > 0 ? $"#{_allTimeStats.BestRank} · E{_allTimeStats.BestRankEpoch}" : "–")"
+                          TertiaryLabel="Best"
+                          Color="#7e6fff"
+                          Tooltip="@(_miningPoolRanking is not null ? $"Qubic's rank among all DOGE mining pools (of {_miningPoolRanking.TotalPools} pools)." : "Qubic's rank among all DOGE mining pools.")" />
             </MudItem>
         </MudGrid>
     }
@@ -149,6 +149,7 @@
                     <div class="chart-apex-wrapper" style="padding: 0 8px;">
                         <ApexCharts.ApexChart TItem="Apex24hPoint"
                                    Options="@_apex24hOptions"
+                                   @ref="_apex24hChartLite"
                                    Height="280">
                             <ApexCharts.ApexPointSeries TItem="Apex24hPoint"
                                              Items="@_apex24hData"
@@ -2430,6 +2431,7 @@ else
     private record Apex24hPoint(DateTimeOffset Time, double Value);
     private List<Apex24hPoint> _apex24hData = [];
     private ApexCharts.ApexChart<Apex24hPoint>? _apex24hChart;
+    private ApexCharts.ApexChart<Apex24hPoint>? _apex24hChartLite;
     private ApexCharts.ApexChartOptions<Apex24hPoint> _apex24hOptions = new();
 
     // 24h hashrate chart (MudBlazor — kept for mini mobile chart)
@@ -2447,6 +2449,7 @@ else
     private string[] _networkHashrateLabels = [];
 
     private bool _prevDarkMode = true;
+    private bool _prevLiteMode = false;
 
     protected override void OnParametersSet()
     {
@@ -2455,6 +2458,20 @@ else
             _prevDarkMode = IsDarkMode;
             InitApex24hOptions();
             InitApexVisitorOptions();
+        }
+
+        if (_prevLiteMode != IsLiteMode)
+        {
+            _prevLiteMode = IsLiteMode;
+            // Chart was hidden (display:none) during init — force re-render after mode switch
+            _ = InvokeAsync(async () =>
+            {
+                await Task.Delay(50); // let DOM update first
+                if (IsLiteMode && _apex24hChartLite is not null)
+                    await _apex24hChartLite.RenderAsync();
+                else if (!IsLiteMode && _apex24hChart is not null)
+                    await _apex24hChart.RenderAsync();
+            });
         }
     }
 
@@ -2585,6 +2602,10 @@ _lastRefresh = DateTimeOffset.UtcNow;
         BuildEpochTimelineData();
         BuildTop10SnapshotsChart();
         BuildNetworkChartsData();
+        if (_apex24hChart is not null)
+            await _apex24hChart.UpdateSeriesAsync();
+        if (_apex24hChartLite is not null)
+            await _apex24hChartLite.UpdateSeriesAsync();
     }
 
     private async Task NotifyNewBlocksAsync()
@@ -2802,10 +2823,9 @@ _lastRefresh = DateTimeOffset.UtcNow;
 
         _24hPeak = dataValues.DefaultIfEmpty(0).Max();
 
-        // ApexCharts data: use bucket timestamps directly (datetime x-axis)
-        _apex24hData = buckets
-            .Zip(dataValues, (b, v) => new Apex24hPoint(b.Key.ToLocalTime(), v))
-            .ToList();
+        // ApexCharts data: mutate in place to avoid chart destroy/recreate on re-render
+        _apex24hData.Clear();
+        _apex24hData.AddRange(buckets.Zip(dataValues, (b, v) => new Apex24hPoint(b.Key.ToLocalTime(), v)));
     }
 
     private void InitApex24hOptions()

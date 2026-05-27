@@ -133,39 +133,30 @@
 
     @* ── Lite Charts: alle 4 im 2-Spalten-Layout ── *@
     <MudGrid Class="mb-2">
-        @* Chart 1: Live 24h Hashrate *@
+        @* Chart 1: Live Hashrate *@
         <MudItem xs="12" md="6">
-            <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%; overflow:visible;">
-                <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Live 24h Hashrate (TH/s)</MudText>
+            <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
                 <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
-                    <MudText Typo="Typo.caption" Class="dim-text">Last 24h · by 30 min · auto 60 s · @_lastRefresh.ToLocalTime().ToString("HH:mm:ss")</MudText>
-                    @if (_24hPeak > 0)
-                    {
-                        <MudText Typo="Typo.caption" Style="color: #4EE0FC;">Peak TH/s: @($"{_24hPeak:F2}")</MudText>
-                    }
+                    <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live Hashrate (TH/s)</MudText>
+                    <MudText Typo="Typo.caption" Class="dim-text">
+                        Last 24h · @_lastRefresh.ToLocalTime().ToString("HH:mm:ss") · auto 60 s
+                    </MudText>
                 </div>
-                @if (_apex24hData.Count > 0)
+                @if (_historyLite.Count > 1)
                 {
-                    <div class="chart-apex-wrapper" style="padding: 0 8px;">
-                        <ApexCharts.ApexChart TItem="Apex24hPoint"
-                                   Options="@_apex24hOptions"
-                                   @ref="_apex24hChartLite"
-                                   Height="280">
-                            <ApexCharts.ApexPointSeries TItem="Apex24hPoint"
-                                             Items="@_apex24hData"
-                                             SeriesType="ApexCharts.SeriesType.Line"
-                                             Name="TH/s"
-                                             XValue="@(p => p.Time.ToUnixTimeMilliseconds())"
-                                             YValue="@(p => (decimal)p.Value)"
-                                             OrderBy="p => p.X" />
-                        </ApexCharts.ApexChart>
+                    <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_chartSeriesLite, _chartLabelsLite)">
+                        <MudChart ChartType="ChartType.Line"
+                                  ChartSeries="@_chartSeriesLite"
+                                  ChartLabels="@_chartLabelsLite"
+                                  Width="100%" Height="280px"
+                                  ChartOptions="@_chartOptions" />
                     </div>
                 }
                 else
                 {
                     <div class="d-flex justify-center align-center" style="height:280px;">
                         <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                        <MudText Class="ml-3 dim-text">Collecting 24h data…</MudText>
+                        <MudText Class="ml-3 dim-text">Waiting for data…</MudText>
                     </div>
                 }
             </MudPaper>
@@ -2285,6 +2276,12 @@ else
     // Live 60-min chart
     private List<ChartSeries<double>> _chartSeries = [];
     private string[] _chartLabels = [];
+
+    // Live 24h chart (Lite Mode)
+    private List<HashrateSnapshot> _historyLite = [];
+    private List<ChartSeries<double>> _chartSeriesLite = [];
+    private string[] _chartLabelsLite = [];
+
     private LineChartOptions _chartOptions => new LineChartOptions
     {
         YAxisTicks = 1,
@@ -2431,7 +2428,6 @@ else
     private record Apex24hPoint(DateTimeOffset Time, double Value);
     private List<Apex24hPoint> _apex24hData = [];
     private ApexCharts.ApexChart<Apex24hPoint>? _apex24hChart;
-    private ApexCharts.ApexChart<Apex24hPoint>? _apex24hChartLite;
     private ApexCharts.ApexChartOptions<Apex24hPoint> _apex24hOptions = new();
 
     // 24h hashrate chart (MudBlazor — kept for mini mobile chart)
@@ -2467,9 +2463,7 @@ else
             _ = InvokeAsync(async () =>
             {
                 await Task.Delay(50); // let DOM update first
-                if (IsLiteMode && _apex24hChartLite is not null)
-                    await _apex24hChartLite.RenderAsync();
-                else if (!IsLiteMode && _apex24hChart is not null)
+                if (_apex24hChart is not null)
                     await _apex24hChart.RenderAsync();
             });
         }
@@ -2595,8 +2589,11 @@ else
         _fullHistory = await Api.GetHistoryAsync(10080);
         _fullHistory = _fullHistory.OrderBy(x => x.Timestamp).ToList();
         _history = _fullHistory.TakeLast(60).ToList();
+        _historyLite = _fullHistory.TakeLast(1440).ToList();
 _lastRefresh = DateTimeOffset.UtcNow;
         BuildChartData();
+        BuildTodayChartData();
+        BuildChartDataLite();
         Build24hChartData();
         BuildEpochChartData();
         BuildEpochTimelineData();
@@ -2604,8 +2601,6 @@ _lastRefresh = DateTimeOffset.UtcNow;
         BuildNetworkChartsData();
         if (_apex24hChart is not null)
             await _apex24hChart.UpdateSeriesAsync();
-        if (_apex24hChartLite is not null)
-            await _apex24hChartLite.UpdateSeriesAsync();
     }
 
     private async Task NotifyNewBlocksAsync()
@@ -2738,7 +2733,25 @@ _lastRefresh = DateTimeOffset.UtcNow;
                 : ""
         ).ToArray();
         _chartSeries = [new ChartSeries<double> { Name = "TH/s", Data = values, TooltipYValueFormat = "F2" }];
+    }
 
+    private void BuildChartDataLite()
+    {
+        if (_historyLite.Count == 0) return;
+
+        // 24h chart: label every 120 points (= 2h) to avoid overlap
+        var valuesLite = _historyLite.Select(h => ToTeraHashPerSecond(h.Hashrate)).ToArray();
+        int totalLite = valuesLite.Length;
+        _chartLabelsLite = _historyLite.Select((h, i) =>
+            (i % 120 == 0 && i < totalLite - 60) || i == totalLite - 1
+                ? h.Timestamp.ToLocalTime().ToString("HH:mm")
+                : ""
+        ).ToArray();
+        _chartSeriesLite = [new ChartSeries<double> { Name = "TH/s", Data = valuesLite, TooltipYValueFormat = "F2" }];
+    }
+
+    private void BuildTodayChartData()
+    {
         // Today chart: peak TH/s per 5-min bucket
         var todayLocal = DateTimeOffset.UtcNow.ToLocalTime().Date;
         var nowLocal = DateTimeOffset.UtcNow.ToLocalTime();

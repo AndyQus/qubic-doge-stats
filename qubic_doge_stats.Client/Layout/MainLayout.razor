@@ -56,9 +56,19 @@
                 </a>
             </div>
         }
+        @if (_bannerInitialized)
+        {
+            <div style="width:100%; display:flex; justify-content:flex-end; align-items:center; gap:6px; padding:4px 16px; background:transparent;">
+                <span style="font-size:0.7rem; font-weight:600; color:var(--mud-palette-text-secondary);">Extended</span>
+                <MudSwitch T="bool" Value="!_isLiteMode" ValueChanged="@((bool v) => ToggleLiteModeAsync(!v))"
+                           Color="Color.Primary" Style="margin:0;" />
+            </div>
+        }
         <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
             <CascadingValue Value="_isDarkMode" Name="IsDarkMode">
-                @Body
+                <CascadingValue Value="_isLiteMode" Name="IsLiteMode">
+                    @Body
+                </CascadingValue>
             </CascadingValue>
             <FooterComponent />
         </MudContainer>
@@ -74,10 +84,12 @@
 @code {
     private MudThemeProvider _themeProvider = null!;
     private bool _isDarkMode = true;
+    private bool _isLiteMode = false;
     private bool _bannerVisible = false;
     private bool _bannerMini = false;
     private bool _bannerInitialized = false;
     private const string BannerKey = "support_banner_closed";
+    private const string LiteModeKey = "lite_mode_enabled";
 
     private MudTheme _theme = new MudTheme
     {
@@ -112,12 +124,22 @@
             _bannerVisible = string.IsNullOrEmpty(closedDate) || closedDate != today;
             _bannerMini = !_bannerVisible;
             _bannerInitialized = true;
+
+            var liteValue = await JS.InvokeAsync<string?>("localStorage.getItem", LiteModeKey);
+            _isLiteMode = liteValue != "false";
+
             await JS.InvokeVoidAsync("eval", "document.activeElement?.blur()");
             StateHasChanged();
         }
     }
 
     private void ToggleDarkMode() => _isDarkMode = !_isDarkMode;
+
+    private async Task ToggleLiteModeAsync(bool value)
+    {
+        _isLiteMode = value;
+        await JS.InvokeVoidAsync("localStorage.setItem", LiteModeKey, value ? "true" : "false");
+    }
 
     private async Task DismissBannerAsync()
     {

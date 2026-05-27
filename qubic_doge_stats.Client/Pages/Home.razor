@@ -7,6 +7,356 @@
 
 <PageTitle>Qubic Doge Stats</PageTitle>
 
+@* ===== LITE MODE ===== *@
+<div style="@(IsLiteMode ? "" : "display:none")">
+    @* ── Lite Panels ── *@
+    @if (_latest is not null)
+    {
+        <MudGrid Class="mb-4 stats-grid" Spacing="3">
+            @* Hashrate *@
+            <MudItem xs="12" sm="6" md="3">
+                <StatCard Icon="@Icons.Material.Filled.Speed"
+                          Title="Hashrate"
+                          Value="@FormatHashrateDisplay(_latest.Hashrate)"
+                          SecondaryValue="@(_latestEpochSummary is not null ? $"{_latestEpochSummary.PeakHashrateDisplay}" : "–")"
+                          SecondaryLabel="Epoch"
+                          TertiaryValue="@(_allTimeStats is not null && _allTimeStats.PeakHashrate > 0 ? $"{_allTimeStats.PeakHashrateDisplay} · E{_allTimeStats.PeakHashrateEpoch}" : "–")"
+                          TertiaryLabel="ATH"
+                          Color="#7e6fff"
+                          Tooltip="Current pool hashrate." />
+            </MudItem>
+            @* DOGE Blocks *@
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                    <div class="d-flex align-center gap-2 mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Stars" Style="color:#4caf50; font-size:1.4rem;" />
+                        <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">DOGE BLOCKS</MudText>
+                        <MudTooltip Text="Gold = Found, Green = Confirmed. Row 1: current epoch. Row 2 (Best): epoch with the most blocks ever. Row 3 (Total): all-time sum." Placement="Placement.Top" Arrow="true">
+                            <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                        </MudTooltip>
+                    </div>
+                    <div class="d-flex gap-2 align-baseline mb-1">
+                        <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_currentEpochBlocksConfirmed > 0 ? _currentEpochBlocksConfirmed.ToString("N0") : "–")</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#FFD700; font-weight:600;">(@(_currentEpochBlocksFound > 0 ? _currentEpochBlocksFound.ToString("N0") : "–"))</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1 mt-1">
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Best</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakBlocksConfirmed > 0 ? _peakBlocksConfirmed.ToString("N0") : "–")</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_peakBlocksFound > 0 ? _peakBlocksFound.ToString("N0") : "–"))</MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
+                        <MudText Typo="Typo.caption" Style="color:#4caf50;">E@(_peakBlocksFoundEpoch)</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1 mt-1">
+                        <MudText Typo="Typo.body1" Style="color:#FF8C00; font-weight:700; min-width:3rem;">Total</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_totalBlocksConfirmed > 0 ? _totalBlocksConfirmed.ToString("N0") : "–")</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#FFD700; opacity:0.8; font-weight:600;">(@(_totalBlocksFound > 0 ? _totalBlocksFound.ToString("N0") : "–"))</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
+            @* LTC Blocks *@
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                    <div class="d-flex align-center gap-2 mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Stars" Style="color:#4caf50; font-size:1.4rem;" />
+                        <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">LTC BLOCKS</MudText>
+                        <MudTooltip Text="Blue = Found, Green = Confirmed. Row 1: current epoch. Row 2 (Best): epoch with the most LTC blocks ever. Row 3 (Total): all-time sum." Placement="Placement.Top" Arrow="true">
+                            <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                        </MudTooltip>
+                    </div>
+                    <div class="d-flex gap-2 align-baseline mb-1">
+                        <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_currentEpochLtcBlocksConfirmed > 0 ? _currentEpochLtcBlocksConfirmed.ToString("N0") : "–")</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#345D9D; font-weight:600;">(@(_currentEpochLtcBlocksFound > 0 ? _currentEpochLtcBlocksFound.ToString("N0") : "–"))</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1 mt-1">
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Best</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_peakLtcBlocksConfirmed > 0 ? _peakLtcBlocksConfirmed.ToString("N0") : "–")</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#345D9D; opacity:0.8; font-weight:600;">(@(_peakLtcBlocksFound > 0 ? _peakLtcBlocksFound.ToString("N0") : "–"))</MudText>
+                        <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
+                        <MudText Typo="Typo.caption" Style="color:#4caf50;">E@(_peakLtcBlocksFoundEpoch)</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1 mt-1">
+                        <MudText Typo="Typo.body1" Style="color:#FF8C00; font-weight:700; min-width:3rem;">Total</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_totalLtcBlocksConfirmed > 0 ? _totalLtcBlocksConfirmed.ToString("N0") : "–")</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#345D9D; opacity:0.8; font-weight:600;">(@(_totalLtcBlocksFound > 0 ? _totalLtcBlocksFound.ToString("N0") : "–"))</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
+            @* Pool Rank (DOGE) *@
+            <MudItem xs="12" sm="6" md="3">
+                <StatCard Icon="@Icons.Material.Filled.EmojiEvents"
+                          Title="Pool Rank (DOGE)"
+                          Value="@(_miningPoolRanking is not null ? $"#{_miningPoolRanking.Qubic.Rank}" : "–")"
+                          SecondaryValue="@(_latestEpochSummary is not null && _latestEpochSummary.BestRank > 0 ? $"#{_latestEpochSummary.BestRank}" : "–")"
+                          SecondaryLabel="Epoch"
+                          TertiaryValue="@(_allTimeStats is not null && _allTimeStats.BestRank > 0 ? $"#{_allTimeStats.BestRank} · E{_allTimeStats.BestRankEpoch}" : "–")"
+                          TertiaryLabel="Best"
+                          Color="#7e6fff"
+                          Tooltip="@(_miningPoolRanking is not null ? $"Qubic's rank among all DOGE mining pools (of {_miningPoolRanking.TotalPools} pools)." : "Qubic's rank among all DOGE mining pools.")" />
+            </MudItem>
+            @* Block Revenue *@
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="glass-card pa-3" Elevation="0" Style="height:100%;">
+                    <div class="d-flex align-center gap-2 mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Style="color:#4caf50; font-size:1.4rem;" />
+                        <MudText Class="stat-card-label" Style="font-size:0.75rem; font-weight:500; letter-spacing:0.5px;">BLOCK REVENUE</MudText>
+                        <MudTooltip Text="Combined DOGE + LTC block rewards in USD. Row 1: current epoch. Row 2 (Best): epoch with highest revenue. Row 3 (Total): all-time sum." Placement="Placement.Top" Arrow="true">
+                            <MudIcon Icon="@Icons.Material.Outlined.Info" Class="stat-card-info-icon" Style="font-size:0.95rem; cursor:help; margin-left:auto;" />
+                        </MudTooltip>
+                    </div>
+                    <div class="d-flex gap-2 align-baseline mb-1">
+                        <MudText Typo="Typo.h5" Style="color:#4caf50; font-weight:700;">@(_currentEpochRevenueUsd > 0 ? $"${_currentEpochRevenueUsd:N0}" : "–")</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1 mt-1">
+                        <MudText Typo="Typo.caption" Class="dim-text" Style="min-width:3rem;">Best</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_bestEpochRevenueUsd > 0 ? $"${_bestEpochRevenueUsd:N0}" : "–")</MudText>
+                        @if (_bestEpochRevenueEpoch > 0)
+                        {
+                            <MudText Typo="Typo.caption" Class="dim-text mx-1">·</MudText>
+                            <MudText Typo="Typo.caption" Style="color:#4caf50;">E@(_bestEpochRevenueEpoch)</MudText>
+                        }
+                    </div>
+                    <div class="d-flex align-center gap-1 mt-1">
+                        <MudText Typo="Typo.body1" Style="color:#FF8C00; font-weight:700; min-width:3rem;">Total</MudText>
+                        <MudText Typo="Typo.body1" Style="color:#4caf50; opacity:0.8; font-weight:600;">@(_totalRevenueUsd > 0 ? $"${_totalRevenueUsd:N0}" : "–")</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        <MudPaper Class="glass-card pa-6 mb-4 d-flex justify-center align-center" Elevation="0">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+            <MudText Class="ml-4 dim-text">Loading stats...</MudText>
+        </MudPaper>
+    }
+
+    @* ── Lite Charts: alle 4 im 2-Spalten-Layout ── *@
+    <MudGrid Class="mb-2">
+        @* Chart 1: Live 24h Hashrate *@
+        <MudItem xs="12" md="6">
+            <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%; overflow:visible;">
+                <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Live 24h Hashrate (TH/s)</MudText>
+                <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                    <MudText Typo="Typo.caption" Class="dim-text">Last 24h · by 30 min · auto 60 s · @_lastRefresh.ToLocalTime().ToString("HH:mm:ss")</MudText>
+                    @if (_24hPeak > 0)
+                    {
+                        <MudText Typo="Typo.caption" Style="color: #4EE0FC;">Peak TH/s: @($"{_24hPeak:F2}")</MudText>
+                    }
+                </div>
+                @if (_apex24hData.Count > 0)
+                {
+                    <div class="chart-apex-wrapper" style="padding: 0 8px;">
+                        <ApexCharts.ApexChart TItem="Apex24hPoint"
+                                   Options="@_apex24hOptions"
+                                   Height="280">
+                            <ApexCharts.ApexPointSeries TItem="Apex24hPoint"
+                                             Items="@_apex24hData"
+                                             SeriesType="ApexCharts.SeriesType.Line"
+                                             Name="TH/s"
+                                             XValue="@(p => p.Time.ToUnixTimeMilliseconds())"
+                                             YValue="@(p => (decimal)p.Value)"
+                                             OrderBy="p => p.X" />
+                        </ApexCharts.ApexChart>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex justify-center align-center" style="height:280px;">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        <MudText Class="ml-3 dim-text">Collecting 24h data…</MudText>
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+        @* Chart 2: Top 10 Epochs by Peak Hashrate *@
+        <MudItem xs="12" md="6">
+            <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Top 10 Epochs by Peak Hashrate (TH/s)</MudText>
+                <MudText Typo="Typo.caption" Class="mb-3 dim-text">Ranking of the 10 epochs with the highest peak hashrate ever recorded</MudText>
+                @if (_top10EpochPeakSeries.Count > 0)
+                {
+                    <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_top10EpochPeakSeries, _top10EpochPeakLabels)">
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@_top10EpochPeakSeries"
+                                  ChartLabels="@_top10EpochPeakLabels"
+                                  Width="100%" Height="280px"
+                                  ChartOptions="@_top10PeakChartOptions" />
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex justify-center align-center" style="height:280px;">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+        @* Chart 3: Blocks per Epoch *@
+        <MudItem xs="12" md="6">
+            <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Blocks per Epoch</MudText>
+                <MudText Typo="Typo.caption" Class="mb-3 dim-text">Found and confirmed blocks per Qubic epoch</MudText>
+                @if (_epochBlockSeries.Count > 0)
+                {
+                    <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochBlockSeries, _poolEpochLabels)">
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@_epochBlockSeries"
+                                  ChartLabels="@_poolEpochLabels"
+                                  Width="100%" Height="280px"
+                                  ChartOptions="@_poolChartOptions" />
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column justify-center align-center gap-3" style="height:280px;">
+                        <MudText Class="dim-text">No block data yet…</MudText>
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+        @* Chart 4: Block Revenue per Epoch *@
+        <MudItem xs="12" md="6">
+            <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
+                <MudText Typo="Typo.h6" Class="mb-1" Style="color: #7e6fff;">Block Revenue per Epoch (USDT)</MudText>
+                <MudText Typo="Typo.caption" Class="mb-3 dim-text">DOGE + LTC block rewards in USD at price at time of find · per Qubic epoch</MudText>
+                @if (_epochRevenueSeries.Count > 0)
+                {
+                    <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_epochRevenueSeries, _epochRevenueLabels)">
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@_epochRevenueSeries"
+                                  ChartLabels="@_epochRevenueLabels"
+                                  Width="100%" Height="280px"
+                                  ChartOptions="@_epochRevenueChartOptions" />
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column justify-center align-center gap-3" style="height:280px;">
+                        <MudText Class="dim-text">No block data yet…</MudText>
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    @* All Blocks *@
+    @if (_recentBlocks.Count > 0)
+    {
+        <MudPaper Class="glass-card pa-4 mb-4" Elevation="0">
+            <div class="d-flex align-center justify-space-between mb-3">
+                <MudText Typo="Typo.h6" Style="color: #7e6fff;">All Blocks (@_recentBlocks.Count total)</MudText>
+                <MudTextField @bind-Value="_allBlocksSearch" Placeholder="Search height, hash, worker, epoch, coin…"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                              Immediate="true" Clearable="true" Variant="Variant.Outlined"
+                              Margin="Margin.Dense" Style="max-width: 320px; margin-left: auto;" />
+            </div>
+            <MudTable Items="@_recentBlocks.OrderByDescending(b => b.Time)" Dense="true" Hover="true"
+                      Style="background: transparent;" RowsPerPage="10"
+                      GroupBy="@_blockGroupDef" Filter="@(b => AllBlocksFilter(b))"
+                      Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh Style="color: #7e6fff;">Coin</MudTh>
+                    <MudTh Style="color: #7e6fff;">Height</MudTh>
+                    <MudTh Style="color: #7e6fff;">Hash</MudTh>
+                    <MudTh Style="color: #7e6fff;">Worker</MudTh>
+                    <MudTh Style="color: #7e6fff;">Time</MudTh>
+                    <MudTh Style="color: #7e6fff;">Reward (USD)</MudTh>
+                    <MudTh Style="color: #7e6fff;">Confirmations</MudTh>
+                    <MudTh Style="color: #7e6fff;">Verify</MudTh>
+                </HeaderContent>
+                <GroupHeaderTemplate>
+                    <MudTh colspan="8" Style="background: rgba(78,224,252,0.10); padding: 4px 12px; border-left: 3px solid #4EE0FC;">
+                        <MudText Typo="Typo.subtitle2" Style="color: #4EE0FC;">
+                            @(context.Key is int k && k > 0 ? $"Epoch {k}" : "Epoch –")
+                        </MudText>
+                    </MudTh>
+                </GroupHeaderTemplate>
+                <RowTemplate>
+                    <MudTd DataLabel="Coin">
+                        @if (context.Chain == "LTC")
+                        {
+                            <MudChip T="string" Size="Size.Small" Style="background:#345D9D; color:#fff; font-weight:700; font-size:0.7rem; height:20px;">LTC</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small" Style="background:#c8a400; color:#fff; font-weight:700; font-size:0.7rem; height:20px;">DOGE</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Height">
+                        <MudLink Href="@(context.Chain == "LTC" ? $"https://blockchair.com/litecoin/block/{context.Height}" : $"https://dogechain.info/block/{context.Height}")"
+                                 Target="_blank" Style="color: #4EE0FC;">@context.Height</MudLink>
+                    </MudTd>
+                    <MudTd DataLabel="Hash">
+                        <span style="font-family: monospace; font-size: 0.875rem; color: #4EE0FC;">
+                            @(string.IsNullOrEmpty(context.Hash) ? "–" : context.Hash.Length > 16 ? context.Hash[..12] + "…" + context.Hash[^4..] : context.Hash)
+                        </span>
+                    </MudTd>
+                    <MudTd DataLabel="Worker">
+                        <MudLink Href="@(context.Chain == "LTC" ? $"https://blockchair.com/litecoin/address/{context.Worker}" : $"https://dogechain.info/address/{context.Worker}")"
+                                 Target="_blank" Style="color: #7e6fff; font-family: monospace; font-size: 0.875rem;">
+                            @(string.IsNullOrEmpty(context.Worker) ? "–" : context.Worker.Length > 16 ? context.Worker[..12] + "…" + context.Worker[^4..] : context.Worker)
+                        </MudLink>
+                    </MudTd>
+                    <MudTd DataLabel="Time" Style="font-size: 0.875rem;">@context.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                    <MudTd DataLabel="Reward (USD)" Style="color: #4caf50; font-size: 0.875rem;">
+                        @if (context.Chain == "LTC")
+                        {
+                            @(context.LtcPriceUsdAtFind > 0
+                                ? $"${LtcBlockReward * context.LtcPriceUsdAtFind:F2}"
+                                : _ltcPrice is not null ? $"${LtcBlockReward * _ltcPrice.UsdPrice:F2}" : "–")
+                        }
+                        else
+                        {
+                            @(context.DogePriceUsdAtFind > 0
+                                ? $"${DogeBlockReward * context.DogePriceUsdAtFind:F2}"
+                                : _dogePrice is not null ? $"${DogeBlockReward * _dogePrice.UsdPrice:F2}" : "–")
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Confirmations">
+                        @if (context.Chain == "LTC")
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default">–</MudChip>
+                        }
+                        else
+                        {
+                            var confFull = _networkStats?.BestBlockHeight > 0 && context.Height > 0
+                                ? _networkStats!.BestBlockHeight - context.Height + 1 : (long?)null;
+                            if (confFull is null)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">Pending</MudChip>
+                            }
+                            else if (confFull >= 100)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success">@($"{confFull:N0}")</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">@($"{confFull:N0}")</MudChip>
+                            }
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Verify">
+                        <MudLink Href="@(context.Chain == "LTC"
+                                        ? $"https://blockchair.com/litecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}"
+                                        : $"https://blockchair.com/dogecoin/block/{(string.IsNullOrEmpty(context.Hash) ? context.Height.ToString() : context.Hash)}")"
+                                 Target="_blank" Style="color: #7e6fff;">
+                            <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Style="font-size: 1.3rem;" />
+                        </MudLink>
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="@_tablePagSizes" />
+                </PagerContent>
+            </MudTable>
+        </MudPaper>
+    }
+</div>
+
+<div style="@(IsLiteMode ? "display:none" : "")">
+
 @* ===== MOBILE MINI CHART (only on xs, hidden on sm+) ===== *@
 @if (_24hSeries.Count > 0 && _24hPeak > 0)
 {
@@ -1587,8 +1937,11 @@ else
 
 </MudTabs>
 
+</div> @* end extended view *@
+
 @code {
     [CascadingParameter(Name = "IsDarkMode")] private bool IsDarkMode { get; set; } = true;
+    [CascadingParameter(Name = "IsLiteMode")] private bool IsLiteMode { get; set; } = false;
 
     private record PoolInfo(string Name, string Stratum, string UserFormat);
     private static readonly PoolInfo[] _partnerPools =
@@ -2093,6 +2446,18 @@ else
     private List<ChartSeries<double>> _networkHashrateSeries = [];
     private string[] _networkHashrateLabels = [];
 
+    private bool _prevDarkMode = true;
+
+    protected override void OnParametersSet()
+    {
+        if (_prevDarkMode != IsDarkMode)
+        {
+            _prevDarkMode = IsDarkMode;
+            InitApex24hOptions();
+            InitApexVisitorOptions();
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
@@ -2456,7 +2821,6 @@ _lastRefresh = DateTimeOffset.UtcNow;
                 Animations = new ApexCharts.Animations { Enabled = false },
                 ForeColor = labelColor,
             },
-            Theme = new ApexCharts.Theme { Mode = IsDarkMode ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
             Stroke = new ApexCharts.Stroke { Curve = ApexCharts.Curve.Smooth, Width = [2] },
             Colors = [lineColor],
             Grid = new ApexCharts.Grid

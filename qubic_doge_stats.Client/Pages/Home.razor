@@ -2521,28 +2521,76 @@ else
 
     private async Task RefreshDataAsync()
     {
-        // ── Phase 1: Lite-Mode-relevant calls (always needed) ──────────────────
-        _latest             = await Api.GetLatestSnapshotAsync();
-        _recentBlocks       = await Api.GetPoolBlocksAsync();
-        _latestEpochSummary = await Api.GetLatestEpochSummaryAsync();
-        _allEpochSummaries  = await Api.GetAllEpochSummariesAsync();
-        _allTimeStats       = await Api.GetAllTimeStatsAsync();
-        _miningPoolRanking  = await Api.GetMiningPoolRankingAsync();
-
-        // History: Lite Mode braucht max. 1440 Punkte (24h), Extended braucht 10080 (7d)
         int historyLimit = IsLiteMode ? 1440 : 10080;
-        _fullHistory = await Api.GetHistoryAsync(historyLimit);
-        _fullHistory = _fullHistory.OrderBy(x => x.Timestamp).ToList();
+
+        if (IsLiteMode)
+        {
+            // ── Lite Mode: alle benötigten Calls parallel ──────────────────────
+            var tLatest    = Api.GetLatestSnapshotAsync();
+            var tBlocks    = Api.GetPoolBlocksAsync();
+            var tEpoch     = Api.GetLatestEpochSummaryAsync();
+            var tAllEpochs = Api.GetAllEpochSummariesAsync();
+            var tAllTime   = Api.GetAllTimeStatsAsync();
+            var tRanking   = Api.GetMiningPoolRankingAsync();
+            var tHistory   = Api.GetHistoryAsync(historyLimit);
+
+            await Task.WhenAll(tLatest, tBlocks, tEpoch, tAllEpochs, tAllTime, tRanking, tHistory);
+
+            _latest             = tLatest.Result;
+            _recentBlocks       = tBlocks.Result;
+            _latestEpochSummary = tEpoch.Result;
+            _allEpochSummaries  = tAllEpochs.Result;
+            _allTimeStats       = tAllTime.Result;
+            _miningPoolRanking  = tRanking.Result;
+            _fullHistory        = tHistory.Result.OrderBy(x => x.Timestamp).ToList();
+        }
+        else
+        {
+            // ── Extended Mode: alle Calls parallel ────────────────────────────
+            var tLatest    = Api.GetLatestSnapshotAsync();
+            var tBlocks    = Api.GetPoolBlocksAsync();
+            var tEpoch     = Api.GetLatestEpochSummaryAsync();
+            var tAllEpochs = Api.GetAllEpochSummariesAsync();
+            var tAllTime   = Api.GetAllTimeStatsAsync();
+            var tRanking   = Api.GetMiningPoolRankingAsync();
+            var tHistory   = Api.GetHistoryAsync(historyLimit);
+            var tPool      = Api.GetPoolStatsAsync();
+            var tQuPrice   = Api.GetQuPriceAsync();
+            var tNetwork   = Api.GetNetworkStatsAsync();
+            var tDoge      = Api.GetDogePriceAsync();
+            var tLtc       = Api.GetLtcPriceAsync();
+
+            await Task.WhenAll(tLatest, tBlocks, tEpoch, tAllEpochs, tAllTime, tRanking,
+                               tHistory, tPool, tQuPrice, tNetwork, tDoge, tLtc);
+
+            _latest             = tLatest.Result;
+            _recentBlocks       = tBlocks.Result;
+            _latestEpochSummary = tEpoch.Result;
+            _allEpochSummaries  = tAllEpochs.Result;
+            _allTimeStats       = tAllTime.Result;
+            _miningPoolRanking  = tRanking.Result;
+            _fullHistory        = tHistory.Result.OrderBy(x => x.Timestamp).ToList();
+            _poolStats          = tPool.Result;
+            _quPrice            = tQuPrice.Result;
+            _networkStats       = tNetwork.Result;
+            _dogePrice          = tDoge.Result;
+            _ltcPrice           = tLtc.Result;
+
+            if (_quPrice is not null && _quPriceManual == 0.0)
+                _quPriceManual = (double)_quPrice.UsdPrice;
+        }
+
         _history     = _fullHistory.TakeLast(60).ToList();
         _historyLite = _fullHistory.TakeLast(1440).ToList();
 
-        // Running epoch not yet finalized → add its values on top of finalized totals
+        // ── Berechnungen (keine Abhängigkeiten untereinander) ──────────────────
         var runningEpoch = _latestEpochSummary is { IsFinalized: false } ? _latestEpochSummary : null;
         var re = runningEpoch;
         var at = _allTimeStats;
 
         _totalTasksDistributed        = (at?.TotalTasksDistributed ?? 0) + (re?.TotalTasksDistributed ?? 0);
         _currentEpochTasksDistributed = _latestEpochSummary?.TotalTasksDistributed ?? 0;
+
         var dogeBlocks = _recentBlocks.Where(b => b.Chain != "LTC").ToList();
         var ltcBlocks  = _recentBlocks.Where(b => b.Chain == "LTC").ToList();
 
@@ -2585,17 +2633,8 @@ else
         _lastRefresh = DateTimeOffset.UtcNow;
         BuildChartDataLite();
 
-        // ── Phase 2: Extended-Mode-only calls (skipped on Lite Mode) ───────────
         if (!IsLiteMode)
         {
-            _poolStats   = await Api.GetPoolStatsAsync();
-            _quPrice     = await Api.GetQuPriceAsync();
-            if (_quPrice is not null && _quPriceManual == 0.0)
-                _quPriceManual = (double)_quPrice.UsdPrice;
-            _networkStats = await Api.GetNetworkStatsAsync();
-            _dogePrice    = await Api.GetDogePriceAsync();
-            _ltcPrice     = await Api.GetLtcPriceAsync();
-
             int reEp = re?.EpochNumber ?? 0;
             (_peakPoolAccepted,      _peakPoolAcceptedEpoch)      = Peak(at?.PeakPoolAccepted      ?? 0, at?.PeakPoolAcceptedEpoch      ?? 0, re?.TotalPoolAccepted,      reEp);
             (_peakPoolRejected,      _peakPoolRejectedEpoch)      = Peak(at?.PeakPoolRejected      ?? 0, at?.PeakPoolRejectedEpoch      ?? 0, re?.TotalPoolRejected,      reEp);

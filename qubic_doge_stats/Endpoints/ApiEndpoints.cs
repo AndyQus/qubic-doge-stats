@@ -84,7 +84,7 @@ public static class ApiEndpoints
         api.MapGet("/mining-pools/ranking", () =>
         {
             var ranking = MiningPoolRankingWorker.LatestRanking;
-            return ranking is not null ? Results.Ok(ranking) : Results.NotFound();
+            return Results.Ok(ranking);
         });
 
         api.MapGet("/qu/price", () =>

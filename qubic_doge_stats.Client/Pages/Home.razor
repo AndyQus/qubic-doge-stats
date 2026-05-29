@@ -2523,65 +2523,61 @@ else
     {
         int historyLimit = IsLiteMode ? 1440 : 10080;
 
-        if (IsLiteMode)
+        // ── Stufe 1: kleine/schnelle Calls + History parallel starten ──────────
+        // History wird parallel gestartet aber NICHT abgewartet — Seite rendert
+        // schon mit den Stat-Cards während die History noch lädt.
+        var tHistory = Api.GetHistoryAsync(historyLimit);
+
+        var tLatest    = Api.GetLatestSnapshotAsync();
+        var tBlocks    = Api.GetPoolBlocksAsync();
+        var tEpoch     = Api.GetLatestEpochSummaryAsync();
+        var tAllEpochs = Api.GetAllEpochSummariesAsync();
+        var tAllTime   = Api.GetAllTimeStatsAsync();
+        var tRanking   = Api.GetMiningPoolRankingAsync();
+
+        Task<PoolLiveStats?>?   tPool    = null;
+        Task<QuPriceStats?>?    tQuPrice = null;
+        Task<DogeNetworkStats?>? tNetwork = null;
+        Task<DogePriceStats?>?  tDoge    = null;
+        Task<LtcPriceStats?>?   tLtc     = null;
+
+        if (!IsLiteMode)
         {
-            // ── Lite Mode: alle benötigten Calls parallel ──────────────────────
-            var tLatest    = Api.GetLatestSnapshotAsync();
-            var tBlocks    = Api.GetPoolBlocksAsync();
-            var tEpoch     = Api.GetLatestEpochSummaryAsync();
-            var tAllEpochs = Api.GetAllEpochSummariesAsync();
-            var tAllTime   = Api.GetAllTimeStatsAsync();
-            var tRanking   = Api.GetMiningPoolRankingAsync();
-            var tHistory   = Api.GetHistoryAsync(historyLimit);
-
-            await Task.WhenAll(tLatest, tBlocks, tEpoch, tAllEpochs, tAllTime, tRanking, tHistory);
-
-            _latest             = tLatest.Result;
-            _recentBlocks       = tBlocks.Result;
-            _latestEpochSummary = tEpoch.Result;
-            _allEpochSummaries  = tAllEpochs.Result;
-            _allTimeStats       = tAllTime.Result;
-            _miningPoolRanking  = tRanking.Result;
-            _fullHistory        = tHistory.Result.OrderBy(x => x.Timestamp).ToList();
+            tPool    = Api.GetPoolStatsAsync();
+            tQuPrice = Api.GetQuPriceAsync();
+            tNetwork = Api.GetNetworkStatsAsync();
+            tDoge    = Api.GetDogePriceAsync();
+            tLtc     = Api.GetLtcPriceAsync();
         }
-        else
-        {
-            // ── Extended Mode: alle Calls parallel ────────────────────────────
-            var tLatest    = Api.GetLatestSnapshotAsync();
-            var tBlocks    = Api.GetPoolBlocksAsync();
-            var tEpoch     = Api.GetLatestEpochSummaryAsync();
-            var tAllEpochs = Api.GetAllEpochSummariesAsync();
-            var tAllTime   = Api.GetAllTimeStatsAsync();
-            var tRanking   = Api.GetMiningPoolRankingAsync();
-            var tHistory   = Api.GetHistoryAsync(historyLimit);
-            var tPool      = Api.GetPoolStatsAsync();
-            var tQuPrice   = Api.GetQuPriceAsync();
-            var tNetwork   = Api.GetNetworkStatsAsync();
-            var tDoge      = Api.GetDogePriceAsync();
-            var tLtc       = Api.GetLtcPriceAsync();
 
+        // Warte nur auf die schnellen Calls — History läuft im Hintergrund weiter
+        if (!IsLiteMode)
             await Task.WhenAll(tLatest, tBlocks, tEpoch, tAllEpochs, tAllTime, tRanking,
-                               tHistory, tPool, tQuPrice, tNetwork, tDoge, tLtc);
+                               tPool!, tQuPrice!, tNetwork!, tDoge!, tLtc!);
+        else
+            await Task.WhenAll(tLatest, tBlocks, tEpoch, tAllEpochs, tAllTime, tRanking);
 
-            _latest             = tLatest.Result;
-            _recentBlocks       = tBlocks.Result;
-            _latestEpochSummary = tEpoch.Result;
-            _allEpochSummaries  = tAllEpochs.Result;
-            _allTimeStats       = tAllTime.Result;
-            _miningPoolRanking  = tRanking.Result;
-            _fullHistory        = tHistory.Result.OrderBy(x => x.Timestamp).ToList();
-            _poolStats          = tPool.Result;
-            _quPrice            = tQuPrice.Result;
-            _networkStats       = tNetwork.Result;
-            _dogePrice          = tDoge.Result;
-            _ltcPrice           = tLtc.Result;
+        _latest             = tLatest.Result;
+        _recentBlocks       = tBlocks.Result;
+        _latestEpochSummary = tEpoch.Result;
+        _allEpochSummaries  = tAllEpochs.Result;
+        _allTimeStats       = tAllTime.Result;
+        _miningPoolRanking  = tRanking.Result;
 
+        if (!IsLiteMode)
+        {
+            _poolStats    = tPool!.Result;
+            _quPrice      = tQuPrice!.Result;
+            _networkStats = tNetwork!.Result;
+            _dogePrice    = tDoge!.Result;
+            _ltcPrice     = tLtc!.Result;
             if (_quPrice is not null && _quPriceManual == 0.0)
                 _quPriceManual = (double)_quPrice.UsdPrice;
         }
 
-        _history     = _fullHistory.TakeLast(60).ToList();
-        _historyLite = _fullHistory.TakeLast(1440).ToList();
+        _history     = [];
+        _historyLite = [];
+        _lastRefresh = DateTimeOffset.UtcNow;
 
         // ── Berechnungen (keine Abhängigkeiten untereinander) ──────────────────
         var runningEpoch = _latestEpochSummary is { IsFinalized: false } ? _latestEpochSummary : null;
@@ -2630,8 +2626,6 @@ else
         await NotifyNewBlocksAsync();
         BuildPoolEpochChart();
         BuildEpochRevenueChart();
-        _lastRefresh = DateTimeOffset.UtcNow;
-        BuildChartDataLite();
 
         if (!IsLiteMode)
         {
@@ -2647,7 +2641,21 @@ else
             _totalSolutionsAccepted = (at?.TotalSolutionsAccepted ?? 0) + (re?.TotalSolutionsAccepted ?? 0);
             _totalSolutionsStale    = (at?.TotalSolutionsStale    ?? 0) + (re?.TotalSolutionsStale    ?? 0);
             _totalSharesValid       = (at?.TotalSharesValid       ?? 0) + (re?.SharesValid            ?? 0);
+        }
 
+        // ── Stufe 1 abgeschlossen: Stat-Cards rendern, History läuft noch ──────
+        await InvokeAsync(StateHasChanged);
+
+        // ── Stufe 2: History abwarten, dann Charts aufbauen ───────────────────
+        _fullHistory = (await tHistory).OrderBy(x => x.Timestamp).ToList();
+        _history     = _fullHistory.TakeLast(60).ToList();
+        _historyLite = _fullHistory.TakeLast(1440).ToList();
+        _lastRefresh = DateTimeOffset.UtcNow;
+
+        BuildChartDataLite();
+
+        if (!IsLiteMode)
+        {
             BuildChartData();
             BuildTodayChartData();
             Build24hChartData();

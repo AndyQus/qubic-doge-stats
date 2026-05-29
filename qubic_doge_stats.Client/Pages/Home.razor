@@ -136,12 +136,25 @@
         @* Chart 1: Live Hashrate *@
         <MudItem xs="12" md="6">
             <MudPaper Class="glass-card pa-2" Elevation="0" Style="height:100%;">
-                <div class="d-flex justify-space-between align-end mb-3 flex-wrap gap-1">
+                <div class="d-flex justify-space-between align-center mb-1 flex-wrap gap-1">
                     <MudText Typo="Typo.h6" Style="color: #7e6fff;">Live Hashrate (TH/s)</MudText>
-                    <MudText Typo="Typo.caption" Class="dim-text">
-                        Last 24h · @_lastRefresh.ToLocalTime().ToString("HH:mm:ss") · auto 60 s
-                    </MudText>
+                    <div class="d-flex gap-1">
+                        @foreach (var f in new[] { (1, "1h"), (6, "6h"), (12, "12h"), (24, "24h") })
+                        {
+                            var hours = f.Item1;
+                            var label = f.Item2;
+                            <button @onclick="@(() => SetLiteHashrateWindow(hours))"
+                                    style="@(_liteHashrateHours == hours
+                                        ? "padding:2px 8px; border-radius:6px; border:1px solid #7e6fff; background:rgba(126,111,255,0.25); color:#7e6fff; font-size:0.7rem; font-weight:700; cursor:pointer;"
+                                        : "padding:2px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:transparent; color:#9ca3af; font-size:0.7rem; cursor:pointer;")">
+                                @label
+                            </button>
+                        }
+                    </div>
                 </div>
+                <MudText Typo="Typo.caption" Class="dim-text mb-3 d-block">
+                    @_lastRefresh.ToLocalTime().ToString("HH:mm:ss") · auto 60 s
+                </MudText>
                 @if (_historyLite.Count > 1)
                 {
                     <div class="chart-mobile-wrapper" style="@ChartWrapperStyle(_chartSeriesLite, _chartLabelsLite)">
@@ -2281,6 +2294,7 @@ else
     private List<HashrateSnapshot> _historyLite = [];
     private List<ChartSeries<double>> _chartSeriesLite = [];
     private string[] _chartLabelsLite = [];
+    private int _liteHashrateHours = 6;
 
     private LineChartOptions _chartOptions => new LineChartOptions
     {
@@ -2507,49 +2521,42 @@ else
 
     private async Task RefreshDataAsync()
     {
-        _latest = await Api.GetLatestSnapshotAsync();
-        _poolStats = await Api.GetPoolStatsAsync();
-        _quPrice = await Api.GetQuPriceAsync();
-        if (_quPrice is not null && _quPriceManual == 0.0)
-            _quPriceManual = (double)_quPrice.UsdPrice;
-        _networkStats = await Api.GetNetworkStatsAsync();
-        _dogePrice = await Api.GetDogePriceAsync();
-        _ltcPrice  = await Api.GetLtcPriceAsync();
-        _recentBlocks = await Api.GetPoolBlocksAsync();
+        // ── Phase 1: Lite-Mode-relevant calls (always needed) ──────────────────
+        _latest             = await Api.GetLatestSnapshotAsync();
+        _recentBlocks       = await Api.GetPoolBlocksAsync();
         _latestEpochSummary = await Api.GetLatestEpochSummaryAsync();
         _allEpochSummaries  = await Api.GetAllEpochSummariesAsync();
-        _allTimeStats = await Api.GetAllTimeStatsAsync();
-        _miningPoolRanking = await Api.GetMiningPoolRankingAsync();
+        _allTimeStats       = await Api.GetAllTimeStatsAsync();
+        _miningPoolRanking  = await Api.GetMiningPoolRankingAsync();
+
+        // History: Lite Mode braucht max. 1440 Punkte (24h), Extended braucht 10080 (7d)
+        int historyLimit = IsLiteMode ? 1440 : 10080;
+        _fullHistory = await Api.GetHistoryAsync(historyLimit);
+        _fullHistory = _fullHistory.OrderBy(x => x.Timestamp).ToList();
+        _history     = _fullHistory.TakeLast(60).ToList();
+        _historyLite = _fullHistory.TakeLast(1440).ToList();
 
         // Running epoch not yet finalized → add its values on top of finalized totals
         var runningEpoch = _latestEpochSummary is { IsFinalized: false } ? _latestEpochSummary : null;
         var re = runningEpoch;
         var at = _allTimeStats;
 
-        // Total = finalized sum + running epoch
-        _totalPoolAccepted       = (at?.TotalPoolAccepted       ?? 0) + (re?.TotalPoolAccepted       ?? 0);
-        _totalPoolRejected       = (at?.TotalPoolRejected       ?? 0) + (re?.TotalPoolRejected       ?? 0);
-        _totalSolutionsAccepted  = (at?.TotalSolutionsAccepted  ?? 0) + (re?.TotalSolutionsAccepted  ?? 0);
-        _totalSolutionsStale     = (at?.TotalSolutionsStale     ?? 0) + (re?.TotalSolutionsStale     ?? 0);
         _totalTasksDistributed        = (at?.TotalTasksDistributed ?? 0) + (re?.TotalTasksDistributed ?? 0);
         _currentEpochTasksDistributed = _latestEpochSummary?.TotalTasksDistributed ?? 0;
         var dogeBlocks = _recentBlocks.Where(b => b.Chain != "LTC").ToList();
         var ltcBlocks  = _recentBlocks.Where(b => b.Chain == "LTC").ToList();
 
-        _totalBlocksFound     = dogeBlocks.Count;
-        _totalBlocksConfirmed = dogeBlocks.Count(b => b.Confirmed);
+        _totalBlocksFound        = dogeBlocks.Count;
+        _totalBlocksConfirmed    = dogeBlocks.Count(b => b.Confirmed);
         _totalLtcBlocksFound     = ltcBlocks.Count;
         _totalLtcBlocksConfirmed = ltcBlocks.Count(b => b.Confirmed);
-        _totalSharesValid     = (at?.TotalSharesValid ?? 0) + (re?.SharesValid ?? 0);
 
-        // Current epoch — direct count from pool_blocks
         var curEpoch = _latest?.QubicEpoch ?? 0;
         _currentEpochBlocksFound        = curEpoch > 0 ? dogeBlocks.Count(b => b.QubicEpoch == curEpoch) : 0;
         _currentEpochBlocksConfirmed    = curEpoch > 0 ? dogeBlocks.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0;
         _currentEpochLtcBlocksFound     = curEpoch > 0 ? ltcBlocks.Count(b => b.QubicEpoch == curEpoch) : 0;
         _currentEpochLtcBlocksConfirmed = curEpoch > 0 ? ltcBlocks.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0;
 
-        // Best epoch — DOGE
         var epochGroups = dogeBlocks.Where(b => b.QubicEpoch > 0).GroupBy(b => b.QubicEpoch).ToList();
         if (epochGroups.Count > 0)
         {
@@ -2561,7 +2568,6 @@ else
             _peakBlocksConfirmedEpoch = bestConfirmed.Key;
         }
 
-        // Best epoch — LTC
         var ltcEpochGroups = ltcBlocks.Where(b => b.QubicEpoch > 0).GroupBy(b => b.QubicEpoch).ToList();
         if (ltcEpochGroups.Count > 0)
         {
@@ -2573,34 +2579,46 @@ else
             _peakLtcBlocksConfirmedEpoch = bestLtcConfirmed.Key;
         }
 
-        // Epoch peak = highest single-epoch value ever; running epoch competes with finalized peaks
-        int reEp = re?.EpochNumber ?? 0;
-        (_peakPoolAccepted,      _peakPoolAcceptedEpoch)      = Peak(at?.PeakPoolAccepted      ?? 0, at?.PeakPoolAcceptedEpoch      ?? 0, re?.TotalPoolAccepted,      reEp);
-        (_peakPoolRejected,      _peakPoolRejectedEpoch)      = Peak(at?.PeakPoolRejected      ?? 0, at?.PeakPoolRejectedEpoch      ?? 0, re?.TotalPoolRejected,      reEp);
-        (_peakSolutionsAccepted, _peakSolutionsAcceptedEpoch) = Peak(at?.PeakSolutionsAccepted ?? 0, at?.PeakSolutionsAcceptedEpoch ?? 0, re?.TotalSolutionsAccepted, reEp);
-        (_peakSolutionsStale,    _peakSolutionsStaleEpoch)    = Peak(at?.PeakSolutionsStale    ?? 0, at?.PeakSolutionsStaleEpoch    ?? 0, re?.TotalSolutionsStale,    reEp);
-        (_peakTasksDistributed,  _peakTasksDistributedEpoch)  = Peak(at?.PeakTasksDistributed  ?? 0, at?.PeakTasksDistributedEpoch  ?? 0, re?.TotalTasksDistributed,  reEp);
-        (_peakSharesValid,       _peakSharesValidEpoch)       = Peak(at?.PeakSharesValid        ?? 0, at?.PeakSharesValidEpoch        ?? 0, re?.SharesValid,            reEp);
-
         await NotifyNewBlocksAsync();
         BuildPoolEpochChart();
         BuildEpochRevenueChart();
-        // 10080 = 7 days × 24h × 60min at 60s poll interval (full epoch)
-        _fullHistory = await Api.GetHistoryAsync(10080);
-        _fullHistory = _fullHistory.OrderBy(x => x.Timestamp).ToList();
-        _history = _fullHistory.TakeLast(60).ToList();
-        _historyLite = _fullHistory.TakeLast(1440).ToList();
-_lastRefresh = DateTimeOffset.UtcNow;
-        BuildChartData();
-        BuildTodayChartData();
+        _lastRefresh = DateTimeOffset.UtcNow;
         BuildChartDataLite();
-        Build24hChartData();
-        BuildEpochChartData();
-        BuildEpochTimelineData();
-        BuildTop10SnapshotsChart();
-        BuildNetworkChartsData();
-        if (_apex24hChart is not null)
-            await _apex24hChart.UpdateSeriesAsync();
+
+        // ── Phase 2: Extended-Mode-only calls (skipped on Lite Mode) ───────────
+        if (!IsLiteMode)
+        {
+            _poolStats   = await Api.GetPoolStatsAsync();
+            _quPrice     = await Api.GetQuPriceAsync();
+            if (_quPrice is not null && _quPriceManual == 0.0)
+                _quPriceManual = (double)_quPrice.UsdPrice;
+            _networkStats = await Api.GetNetworkStatsAsync();
+            _dogePrice    = await Api.GetDogePriceAsync();
+            _ltcPrice     = await Api.GetLtcPriceAsync();
+
+            int reEp = re?.EpochNumber ?? 0;
+            (_peakPoolAccepted,      _peakPoolAcceptedEpoch)      = Peak(at?.PeakPoolAccepted      ?? 0, at?.PeakPoolAcceptedEpoch      ?? 0, re?.TotalPoolAccepted,      reEp);
+            (_peakPoolRejected,      _peakPoolRejectedEpoch)      = Peak(at?.PeakPoolRejected      ?? 0, at?.PeakPoolRejectedEpoch      ?? 0, re?.TotalPoolRejected,      reEp);
+            (_peakSolutionsAccepted, _peakSolutionsAcceptedEpoch) = Peak(at?.PeakSolutionsAccepted ?? 0, at?.PeakSolutionsAcceptedEpoch ?? 0, re?.TotalSolutionsAccepted, reEp);
+            (_peakSolutionsStale,    _peakSolutionsStaleEpoch)    = Peak(at?.PeakSolutionsStale    ?? 0, at?.PeakSolutionsStaleEpoch    ?? 0, re?.TotalSolutionsStale,    reEp);
+            (_peakTasksDistributed,  _peakTasksDistributedEpoch)  = Peak(at?.PeakTasksDistributed  ?? 0, at?.PeakTasksDistributedEpoch  ?? 0, re?.TotalTasksDistributed,  reEp);
+            (_peakSharesValid,       _peakSharesValidEpoch)       = Peak(at?.PeakSharesValid        ?? 0, at?.PeakSharesValidEpoch        ?? 0, re?.SharesValid,            reEp);
+            _totalPoolAccepted      = (at?.TotalPoolAccepted      ?? 0) + (re?.TotalPoolAccepted      ?? 0);
+            _totalPoolRejected      = (at?.TotalPoolRejected      ?? 0) + (re?.TotalPoolRejected      ?? 0);
+            _totalSolutionsAccepted = (at?.TotalSolutionsAccepted ?? 0) + (re?.TotalSolutionsAccepted ?? 0);
+            _totalSolutionsStale    = (at?.TotalSolutionsStale    ?? 0) + (re?.TotalSolutionsStale    ?? 0);
+            _totalSharesValid       = (at?.TotalSharesValid       ?? 0) + (re?.SharesValid            ?? 0);
+
+            BuildChartData();
+            BuildTodayChartData();
+            Build24hChartData();
+            BuildEpochChartData();
+            BuildEpochTimelineData();
+            BuildTop10SnapshotsChart();
+            BuildNetworkChartsData();
+            if (_apex24hChart is not null)
+                await _apex24hChart.UpdateSeriesAsync();
+        }
     }
 
     private async Task NotifyNewBlocksAsync()
@@ -2735,15 +2753,25 @@ _lastRefresh = DateTimeOffset.UtcNow;
         _chartSeries = [new ChartSeries<double> { Name = "TH/s", Data = values, TooltipYValueFormat = "F2" }];
     }
 
+    private void SetLiteHashrateWindow(int hours)
+    {
+        _liteHashrateHours = hours;
+        BuildChartDataLite();
+    }
+
     private void BuildChartDataLite()
     {
         if (_historyLite.Count == 0) return;
 
-        // 24h chart: label every 120 points (= 2h) to avoid overlap
-        var valuesLite = _historyLite.Select(h => ToTeraHashPerSecond(h.Hashrate)).ToArray();
+        var window = _fullHistory.TakeLast(_liteHashrateHours * 60).ToList();
+        if (window.Count == 0) window = _historyLite;
+
+        var valuesLite = window.Select(h => ToTeraHashPerSecond(h.Hashrate)).ToArray();
         int totalLite = valuesLite.Length;
-        _chartLabelsLite = _historyLite.Select((h, i) =>
-            (i % 120 == 0 && i < totalLite - 60) || i == totalLite - 1
+        // Label interval: 1h→10min(10pts), 6h→1h(60pts), 12h→2h(120pts), 24h→2h(120pts)
+        int labelEvery = _liteHashrateHours <= 1 ? 10 : _liteHashrateHours <= 6 ? 60 : 120;
+        _chartLabelsLite = window.Select((h, i) =>
+            (i % labelEvery == 0 && i < totalLite - labelEvery / 2) || i == totalLite - 1
                 ? h.Timestamp.ToLocalTime().ToString("HH:mm")
                 : ""
         ).ToArray();

@@ -376,22 +376,6 @@ public class AsicProfitabilityData
     public DateTimeOffset FetchedAt { get; set; }
 }
 
-public class DonationEntry
-{
-    [BsonId(autoId: true)]
-    public ObjectId Id { get; set; } = ObjectId.NewObjectId();
-    public string Address { get; set; } = "";
-    public long AmountQu { get; set; }
-    public DateTime Date { get; set; }
-}
-
-public class TopDonor
-{
-    public string Address { get; set; } = "";
-    public long TotalQu { get; set; }
-    public string Date { get; set; } = "";
-}
-
 // ── Visitor Analytics ────────────────────────────────────────────────────────
 
 public class VisitorEntry

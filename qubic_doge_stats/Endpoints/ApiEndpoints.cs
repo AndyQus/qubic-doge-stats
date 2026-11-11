@@ -120,9 +120,6 @@ public static class ApiEndpoints
             return price is not null ? Results.Ok(price) : Results.NotFound();
         });
 
-        api.MapGet("/donations/top", (LiteDbContext db, int limit = 50) =>
-            Results.Ok(db.GetTopDonors(Math.Min(limit, 100))));
-
         api.MapGet("/logs", (InMemoryLogBuffer logs, int limit = 200, string? level = null) =>
         {
             var entries = logs.GetAll();

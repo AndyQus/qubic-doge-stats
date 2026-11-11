@@ -46,6 +46,27 @@ public static class ApiEndpoints
             return Results.Ok(new { TotalUsd = totalUsd, BlocksWithPrice = blocksWithPrice });
         });
 
+        // Kompaktes Block-Summary für externe Einbindung (z. B. Qubic Spotlight).
+        // Liefert nur die vier Kennzahlen, ohne dass der Aufrufer die komplette
+        // Blockliste laden und selbst zählen muss.
+        api.MapGet("/blocks/summary", (LiteDbContext db) =>
+        {
+            var blocks   = db.GetAllPoolBlocks();
+            var curEpoch = db.GetLatestSnapshot()?.QubicEpoch ?? 0;
+
+            var doge = blocks.Where(b => b.Chain != "LTC").ToList();
+            var ltc  = blocks.Where(b => b.Chain == "LTC").ToList();
+
+            return Results.Ok(new
+            {
+                CurrentEpoch              = curEpoch,
+                DogeTotalConfirmed        = doge.Count(b => b.Confirmed),
+                DogeCurrentEpochConfirmed = curEpoch > 0 ? doge.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0,
+                LtcTotalConfirmed         = ltc.Count(b => b.Confirmed),
+                LtcCurrentEpochConfirmed  = curEpoch > 0 ? ltc.Count(b => b.QubicEpoch == curEpoch && b.Confirmed) : 0,
+            });
+        });
+
         api.MapGet("/network/stats", () =>
         {
             var stats = DogeExplorerPollingWorker.LatestStats;
